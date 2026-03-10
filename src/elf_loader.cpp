@@ -1,4 +1,6 @@
 #include "elf_loader.h"
+#include "logger.h"
+#include <cstdint>
 
 ElfLoader::ElfLoader()
     : fd(-1), file_map(nullptr), ehdr(nullptr), entry(nullptr),
@@ -13,25 +15,39 @@ ElfLoader::~ElfLoader() {
 }
 
 bool ElfLoader::load(const char *filename) {
+  LOG_INFO("Loading ELF file: %s", filename);
+
   // Open ELF file
   fd = open(filename, O_RDONLY);
   if (fd == -1) {
-    std::cerr << "Failed to open file: " << strerror(errno) << std::endl;
+    LOG_ERROR("Failed to open file: %s", strerror(errno));
     return false;
   }
 
   // Get file size
   if (fstat(fd, &st) == -1) {
-    std::cerr << "fstat failed: " << strerror(errno) << std::endl;
+    LOG_ERROR("fstat failed: %s", strerror(errno));
     close(fd);
     return false;
   }
 
+  // Validate file size is non-negative and fits in size_t
+  if (st.st_size < 0) {
+    LOG_ERROR("Invalid file size (negative)");
+    close(fd);
+    return false;
+  }
+
+  LOG_DEBUG("File size: %ld bytes", st.st_size);
+
+  // Cast to size_t - safe because we checked st.st_size >= 0
+  size_t file_size = static_cast<size_t>(st.st_size);
+
   // Map the entire file into memory
   file_map = static_cast<uint8_t *>(
-      mmap(nullptr, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
+      mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0));
   if (file_map == MAP_FAILED) {
-    std::cerr << "mmap failed: " << strerror(errno) << std::endl;
+    LOG_ERROR("mmap failed: %s", strerror(errno));
     close(fd);
     return false;
   }
@@ -40,29 +56,40 @@ bool ElfLoader::load(const char *filename) {
   close(fd);
   fd = -1;
 
+  LOG_DEBUG("File mapped at %p", file_map);
+
   // Point to ELF header
   ehdr = reinterpret_cast<Elf64_Ehdr *>(file_map);
 
   // Basic ELF validation
   if (std::memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) {
-    std::cerr << "Not a valid ELF file" << std::endl;
-    munmap(file_map, st.st_size);
+    LOG_ERROR("Not a valid ELF file");
+    munmap(file_map, file_size);
     file_map = nullptr;
     return false;
   }
 
   // For now, only 64-bit little-endian executables
-  if (ehdr->e_ident[EI_CLASS] != ELFCLASS64 ||
-      ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
-    std::cerr << "Only 64-bit little-endian ELF is supported" << std::endl;
-    munmap(file_map, st.st_size);
+  if (ehdr->e_ident[EI_CLASS] != ELFCLASS64) {
+    LOG_ERROR("Only 64-bit ELF is supported");
+    munmap(file_map, file_size);
     file_map = nullptr;
     return false;
   }
 
+  if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
+    LOG_ERROR("Only little-endian ELF is supported");
+    munmap(file_map, file_size);
+    file_map = nullptr;
+    return false;
+  }
+
+  LOG_DEBUG("ELF header validated: %d program headers, %d section headers",
+            ehdr->e_phnum, ehdr->e_shnum);
+
   // Parse and load segments (existing placeholder)
   if (!load_segments()) {
-    munmap(file_map, st.st_size);
+    munmap(file_map, file_size);
     file_map = nullptr;
     return false;
   }
@@ -72,14 +99,17 @@ bool ElfLoader::load(const char *filename) {
 
   // Set entry point
   entry = reinterpret_cast<void *>(ehdr->e_entry);
+  LOG_INFO("Entry point: 0x%lx", reinterpret_cast<uintptr_t>(entry));
 
   is_loaded = true;
   return true;
 }
 
 void ElfLoader::unload() {
+  LOG_DEBUG("Unloading ELF");
   if (file_map) {
-    munmap(file_map, st.st_size);
+    size_t file_size = static_cast<size_t>(st.st_size);
+    munmap(file_map, file_size);
     file_map = nullptr;
   }
   if (fd != -1) {
@@ -98,8 +128,8 @@ bool ElfLoader::load_segments() {
   Elf64_Phdr *phdr = reinterpret_cast<Elf64_Phdr *>(file_map + ehdr->e_phoff);
   for (int i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type == PT_LOAD) {
-      std::cout << "Loading segment at vaddr 0x" << std::hex << phdr[i].p_vaddr
-                << ", size 0x" << phdr[i].p_memsz << std::dec << std::endl;
+      LOG_INFO("Loading segment at vaddr 0x%lx, size 0x%lx", phdr[i].p_vaddr,
+               phdr[i].p_memsz);
       // TODO: Actual loading logic with proper alignment and permissions
     }
   }
@@ -110,7 +140,7 @@ void ElfLoader::parse_sections() {
   exec_sections.clear();
 
   if (ehdr->e_shnum == 0 || ehdr->e_shoff == 0) {
-    std::cout << "No section headers found." << std::endl;
+    LOG_INFO("No section headers found.");
     return;
   }
 
@@ -131,16 +161,21 @@ void ElfLoader::parse_sections() {
           (shdr->sh_name != 0) ? std::string(shstrtab + shdr->sh_name) : "";
       info.addr = shdr->sh_addr;
       info.size = shdr->sh_size;
+
+      LOG_DEBUG("Found executable section: %s at 0x%lx (size: 0x%lx)",
+                info.name.c_str(), info.addr, info.size);
+
       // Ensure the section data lies within the file
       if (shdr->sh_offset + shdr->sh_size <=
           static_cast<uint64_t>(st.st_size)) {
         info.data = file_map + shdr->sh_offset;
       } else {
-        std::cerr << "Warning: section " << info.name
-                  << " data out of file bounds" << std::endl;
+        LOG_WARN("Section %s data out of file bounds", info.name.c_str());
         info.data = nullptr;
       }
       exec_sections.push_back(info);
     }
   }
+
+  LOG_INFO("Found %zu executable sections", exec_sections.size());
 }

@@ -1,11 +1,15 @@
+#include "logger.h"
 #include "simulator.h"
 #include <iostream>
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " <elf-file>" << std::endl;
+    LOG_ERROR("Usage: %s <elf-file>", argv[0]);
     return 1;
   }
+
+  // Set log level (could be made configurable)
+  Logger::instance().setLevel(LogLevel::INFO);
 
   Simulator sim;
 
@@ -13,7 +17,7 @@ int main(int argc, char *argv[]) {
     sim.run();
     return 0;
   } else {
-    std::cerr << "Failed to load ELF." << std::endl;
+    LOG_ERROR("Failed to load ELF.");
     return 1;
   }
 }
