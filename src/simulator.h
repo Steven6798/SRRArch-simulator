@@ -14,12 +14,13 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
+#include "memory.h"
 #include "registers.h"
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <vector>
 
+// Forward declaration
 class ElfLoader;
 
 class Simulator {
@@ -27,7 +28,14 @@ public:
   Simulator();
   ~Simulator();
 
-  // Load and prepare for execution
+  // Disable copy
+  Simulator(const Simulator &) = delete;
+  Simulator &operator=(const Simulator &) = delete;
+
+  // Allow move
+  Simulator(Simulator &&) = default;
+  Simulator &operator=(Simulator &&) = default;
+
   bool load_elf(const char *filename);
 
   // Run the program
@@ -45,26 +53,13 @@ public:
   // Stop simulation
   void stop() { running = false; }
 
-  // Delete copy constructor and assignment operator (unique_ptr can't be
-  // copied)
-  Simulator(const Simulator &) = delete;
-  Simulator &operator=(const Simulator &) = delete;
-
-  // Allow move operations
-  Simulator(Simulator &&) = default;
-  Simulator &operator=(Simulator &&) = default;
-
 private:
   Registers regs;
   std::unique_ptr<ElfLoader> loader;
-  std::map<uint64_t, uint8_t> memory;
+  Memory memory;
   uint64_t entry_point = 0;
   bool running = false;
   uint64_t instruction_count = 0;
-
-  // Memory access
-  uint64_t read_mem(uint64_t addr, size_t size);
-  void write_mem(uint64_t addr, uint64_t value, size_t size);
 
   // Fetch instruction at current PC
   uint64_t fetch();

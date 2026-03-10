@@ -31,7 +31,7 @@ bool Simulator::load_elf(const char *filename) {
 
   if (!loader->load(filename)) {
     LOG_ERROR("Failed to load ELF file: %s", filename);
-    loader.reset(); // Explicitly release (though it would happen automatically)
+    loader.reset();
     return false;
   }
 
@@ -48,16 +48,14 @@ bool Simulator::load_elf(const char *filename) {
     LOG_INFO("Loading section %s at 0x%lx (size: 0x%lx bytes)",
              sec.name.c_str(), sec.addr, sec.size);
 
-    // Copy section data into simulator memory
-    for (uint64_t i = 0; i < sec.size; i++) {
-      memory[sec.addr + i] = sec.data[i];
-    }
+    // Use Memory class to load the segment
+    memory.load_segment(sec.addr, sec.data, sec.size);
     total_bytes += sec.size;
   }
 
   LOG_INFO("Loaded %zu bytes into memory", total_bytes);
 
-  // Initialize stack pointer (typical location - can be adjusted)
+  // Initialize stack pointer
   regs.set_sp(0x80000000);
   LOG_DEBUG("Stack pointer initialized to 0x%lx", regs.get_sp());
 
@@ -66,20 +64,9 @@ bool Simulator::load_elf(const char *filename) {
 
 uint64_t Simulator::fetch() {
   uint64_t pc = regs.get_pc();
-  uint64_t instruction = 0;
 
-  // Fetch 8 bytes from memory at PC
-  for (uint64_t i = 0; i < 8; i++) {
-    uint64_t addr = pc + i;
-    auto it = memory.find(addr);
-    if (it != memory.end()) {
-      instruction |= static_cast<uint64_t>(it->second) << (i * 8);
-    } else {
-      LOG_ERROR("Memory access violation at 0x%lx (PC=0x%lx)", addr, pc);
-      running = false;
-      return 0;
-    }
-  }
+  // Use Memory class to read instruction
+  uint64_t instruction = memory.read_qword(pc);
 
   LOG_DEBUG("Fetched instruction at 0x%lx: 0x%016lx", pc, instruction);
 
@@ -186,29 +173,6 @@ void Simulator::run() {
   LOG_INFO("Executed %lu instructions", instruction_count);
   LOG_DEBUG("Final register state:");
   regs.dump();
-}
-
-// Memory access methods
-uint64_t Simulator::read_mem(uint64_t addr, size_t size) {
-  uint64_t value = 0;
-  for (size_t i = 0; i < size; i++) {
-    auto it = memory.find(addr + i);
-    if (it != memory.end()) {
-      value |= static_cast<uint64_t>(it->second) << (i * 8);
-    } else {
-      LOG_ERROR("Read from unmapped address 0x%lx", addr + i);
-      return 0;
-    }
-  }
-  LOG_DEBUG("Read 0x%lx from 0x%lx (size: %zu)", value, addr, size);
-  return value;
-}
-
-void Simulator::write_mem(uint64_t addr, uint64_t value, size_t size) {
-  LOG_DEBUG("Writing 0x%lx to 0x%lx (size: %zu)", value, addr, size);
-  for (size_t i = 0; i < size; i++) {
-    memory[addr + i] = (value >> (i * 8)) & 0xFF;
-  }
 }
 
 // Instruction implementations
