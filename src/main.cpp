@@ -1,3 +1,15 @@
+/**
+ * @file main.cpp
+ * @brief SRRArch simulator entry point
+ *
+ * Command-line interface for the simulator.
+ * Usage: SRRArch-simulator <elf-file>
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #include "logger.h"
 #include "simulator.h"
 #include <iostream>

@@ -1,3 +1,18 @@
+/**
+ * @file simulator.cpp
+ * @brief Simulation engine implementation
+ *
+ * Core simulation logic including:
+ * - ELF loading and memory initialization
+ * - Instruction fetch from memory
+ * - Execute with register updates
+ * - Instruction tracing and logging
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #include "simulator.h"
 #include "decoder.h"
 #include "elf_loader.h"

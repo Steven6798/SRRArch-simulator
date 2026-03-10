@@ -1,3 +1,14 @@
+/**
+ * @file decoder.h
+ * @brief Instruction decoder for SRRArch custom architecture
+ *
+ * Defines opcodes and provides decoding functionality for 64-bit instructions.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #ifndef DECODER_H
 #define DECODER_H
 

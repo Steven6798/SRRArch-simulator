@@ -1,3 +1,15 @@
+/**
+ * @file decoder.cpp
+ * @brief Implementation of instruction decoder
+ *
+ * Decodes 64-bit instructions into human-readable format.
+ * Supports 6 instruction types: NOP, RETURN, GENINT, SHL, OR, MOV.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #include "decoder.h"
 #include "logger.h"
 #include <cstdint>

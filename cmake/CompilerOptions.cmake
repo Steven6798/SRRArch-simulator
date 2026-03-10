@@ -1,4 +1,15 @@
-# Compiler options for different configurations
+# /**
+#  * @file CompilerOptions.cmake
+#  * @brief Compiler warning and optimization settings
+#  *
+#  * Configures warning flags (-Wall, -Wextra, -Wconversion, etc.)
+#  * and optimization levels for different build types
+#  * (Debug, Release, RelWithDebInfo).
+#  *
+#  * @author SRRArch Simulator Team
+#  * @version 0.1.0
+#  * @date 2026
+#  */
 
 # Common compiler warnings
 set(COMMON_WARNINGS

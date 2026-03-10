@@ -1,3 +1,16 @@
+/**
+ * @file simulator.h
+ * @brief Main simulation engine for SRRArch
+ *
+ * Implements the fetch-decode-execute loop with memory model
+ * and register file. Supports loading ELF files and executing
+ * programs step-by-step or continuously.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 

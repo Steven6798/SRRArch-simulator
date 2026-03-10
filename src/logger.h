@@ -1,3 +1,16 @@
+/**
+ * @file logger.h
+ * @brief Thread-safe logging utility
+ *
+ * Provides logging with multiple levels (DEBUG, INFO, WARNING, ERROR),
+ * timestamps, and printf-style formatting. Thread-safe with mutex
+ * protection.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #ifndef SRRARCH_LOGGER_H
 #define SRRARCH_LOGGER_H
 

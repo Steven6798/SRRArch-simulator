@@ -1,3 +1,16 @@
+/**
+ * @file elf_loader.cpp
+ * @brief Implementation of ELF file loader
+ *
+ * Implements ELF parsing logic including validation of ELF headers,
+ * extraction of program segments, and collection of executable sections.
+ * Uses mmap for efficient file access.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #include "elf_loader.h"
 #include "logger.h"
 #include <cstdint>

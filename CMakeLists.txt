@@ -1,3 +1,15 @@
+# /**
+#  * @file CMakeLists.txt
+#  * @brief Top-level CMake configuration for SRRArch simulator
+#  *
+#  * Sets up C++17 standard, compiler warnings, output directories,
+#  * and includes LLVM for potential future integration.
+#  *
+#  * @author SRRArch Simulator Team
+#  * @version 0.1.0
+#  * @date 2026
+#  */
+
 cmake_minimum_required(VERSION 3.15)
 project(SRRArch-simulator VERSION 0.1.0 LANGUAGES CXX)
 

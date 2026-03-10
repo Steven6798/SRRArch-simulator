@@ -1,3 +1,16 @@
+/**
+ * @file elf_loader.h
+ * @brief ELF file loader for SRRArch simulator
+ *
+ * Provides functionality to parse 64-bit ELF executable files,
+ * extract program headers, section headers, and load executable
+ * sections into memory. Supports little-endian ELF format.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #ifndef ELF_LOADER_H
 #define ELF_LOADER_H
 

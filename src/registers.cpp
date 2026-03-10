@@ -1,3 +1,15 @@
+/**
+ * @file registers.cpp
+ * @brief Register file implementation
+ *
+ * Implements read/write operations with bounds checking,
+ * register name mapping, and debug dump functionality.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #include "registers.h"
 #include <iomanip>
 #include <iostream>

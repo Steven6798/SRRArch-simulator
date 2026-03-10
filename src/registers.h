@@ -1,3 +1,16 @@
+/**
+ * @file registers.h
+ * @brief Register file implementation for SRRArch
+ *
+ * Provides 32 64-bit general purpose registers with special-purpose
+ * naming: PC (R0), SP (R1), FP (R2), RV (R3), ARG0-ARG3 (R4-R7),
+ * and general purpose R8-R31.
+ *
+ * @author SRRArch Simulator Team
+ * @version 0.1.0
+ * @date 2026
+ */
+
 #ifndef REGISTERS_H
 #define REGISTERS_H
 
