@@ -2,9 +2,7 @@
  * @file decoder.h
  * @brief Instruction decoder for SRRArch custom architecture
  *
- * Defines opcodes and provides decoding functionality for 64-bit
- * instructions. Each instruction is 8 bytes with opcode in LSB
- * and register fields in subsequent bits.
+ * Uses the Instruction class for all decoding.
  *
  * @author SRRArch Simulator Team
  * @version 0.1.0

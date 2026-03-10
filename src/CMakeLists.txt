@@ -4,7 +4,7 @@ add_executable(SRRArch-simulator main.cpp)
 # Create libraries
 add_library(utils_lib logger.cpp)
 add_library(elf_lib elf_loader.cpp)
-add_library(decoder_lib decoder.cpp)
+add_library(decoder_lib decoder.cpp instruction.cpp)
 add_library(registers_lib registers.cpp)
 add_library(simulator_lib simulator.cpp memory.cpp)
 

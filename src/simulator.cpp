@@ -16,6 +16,7 @@
 #include "simulator.h"
 #include "decoder.h"
 #include "elf_loader.h"
+#include "instruction.h"
 #include "logger.h"
 #include <cassert>
 #include <iomanip>
@@ -76,63 +77,42 @@ uint64_t Simulator::fetch() {
   return instruction;
 }
 
-void Simulator::execute(uint64_t instruction) {
-  Opcode opcode = static_cast<Opcode>(instruction & 0xFF);
+void Simulator::execute(uint64_t raw_instruction) {
+  Instruction inst(raw_instruction);
 
-  // Log the instruction we're executing
   LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
 
-  // Decode and print (reuse your decoder)
-  uint8_t bytes[8];
-  for (int i = 0; i < 8; i++) {
-    bytes[i] = (instruction >> (i * 8)) & 0xFF;
-  }
-  decode_instruction(bytes);
+  // Decode and print using Instruction class
+  inst.print_bytes();
+  inst.print();
 
-  switch (opcode) {
+  switch (inst.opcode()) {
   case Opcode::NOP:
     exec_nop();
     break;
 
-  case Opcode::RETURN: {
-    uint8_t reg = (instruction >> 8) & 0x1F;
-    exec_return(reg);
+  case Opcode::RETURN:
+    exec_return(inst.return_reg());
     break;
-  }
 
-  case Opcode::GENINT: {
-    uint8_t reg = (instruction >> 8) & 0x1F;
-    uint32_t imm = (instruction >> 13) & 0xFFFFFFFF;
-    exec_genint(reg, imm);
+  case Opcode::GENINT:
+    exec_genint(inst.genint_reg(), inst.immediate());
     break;
-  }
 
-  case Opcode::SHL: {
-    uint8_t dest = (instruction >> 8) & 0x1F;
-    uint8_t src1 = (instruction >> 13) & 0x1F;
-    uint8_t src2 = (instruction >> 18) & 0x1F;
-    exec_shl(dest, src1, src2);
+  case Opcode::SHL:
+    exec_shl(inst.shl_dest(), inst.shl_src1(), inst.shl_src2());
     break;
-  }
 
-  case Opcode::OR: {
-    uint8_t dest = (instruction >> 8) & 0x1F;
-    uint8_t src1 = (instruction >> 13) & 0x1F;
-    uint8_t src2 = (instruction >> 18) & 0x1F;
-    exec_or(dest, src1, src2);
+  case Opcode::OR:
+    exec_or(inst.or_dest(), inst.or_src1(), inst.or_src2());
     break;
-  }
 
-  case Opcode::MOV: {
-    uint8_t dest = (instruction >> 8) & 0x1F;
-    uint8_t src = (instruction >> 13) & 0x1F;
-    exec_mov(dest, src);
+  case Opcode::MOV:
+    exec_mov(inst.dest_reg(), inst.src_reg());
     break;
-  }
 
   default:
-    LOG_ERROR("Unknown opcode 0x%02x at PC=0x%lx", static_cast<uint8_t>(opcode),
-              regs.get_pc() - 8);
+    LOG_ERROR("Unknown opcode at PC=0x%lx", regs.get_pc() - 8);
     running = false;
     break;
   }
