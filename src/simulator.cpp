@@ -21,6 +21,8 @@
 #include <cassert>
 #include <iomanip>
 
+namespace srrarch {
+
 Simulator::Simulator() = default;
 Simulator::~Simulator() = default;
 
@@ -197,3 +199,5 @@ void Simulator::exec_mov(uint8_t dest, uint8_t src) {
   LOG_INFO("  -> MOV: r%u = r%u (0x%lx)", dest, src, val);
   regs.write(dest, val);
 }
+
+} // namespace srrarch

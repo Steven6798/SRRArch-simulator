@@ -2,9 +2,6 @@
  * @file main.cpp
  * @brief SRRArch simulator entry point
  *
- * Command-line interface for the simulator.
- * Usage: SRRArch-simulator <elf-file>
- *
  * @author SRRArch Simulator Team
  * @version 0.1.0
  * @date 2026
@@ -12,7 +9,6 @@
 
 #include "logger.h"
 #include "simulator.h"
-#include <iostream>
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -20,10 +16,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // Set log level (could be made configurable)
-  Logger::instance().setLevel(LogLevel::INFO);
-
-  Simulator sim;
+  srrarch::Logger::instance().setLevel(srrarch::LogLevel::INFO);
+  srrarch::Simulator sim;
 
   if (sim.load_elf(argv[1])) {
     sim.run();

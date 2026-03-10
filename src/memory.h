@@ -17,6 +17,8 @@
 #include <map>
 #include <vector>
 
+namespace srrarch {
+
 class Memory {
 public:
   Memory() = default;
@@ -65,5 +67,7 @@ private:
   // Helper for bounds checking
   bool check_range(uint64_t addr, size_t size) const;
 };
+
+} // namespace srrarch
 
 #endif // MEMORY_H

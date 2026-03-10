@@ -17,6 +17,8 @@
 #include <iomanip>
 #include <iostream>
 
+namespace srrarch {
+
 bool Memory::load_segment(uint64_t addr, const uint8_t *src_data, size_t size) {
   LOG_DEBUG("Loading segment at 0x%lx (size: %zu bytes)", addr, size);
 
@@ -176,3 +178,5 @@ void Memory::dump() const {
   uint64_t end = data.rbegin()->first;
   dump_segment(start, end);
 }
+
+} // namespace srrarch

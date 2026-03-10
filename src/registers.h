@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <string>
 
+namespace srrarch {
+
 // Named registers for better code readability
 enum Register : uint8_t {
   // Special purpose registers
@@ -95,5 +97,7 @@ public:
 private:
   uint64_t regs[NUM_REGISTERS];
 };
+
+} // namespace srrarch
 
 #endif // REGISTERS_H

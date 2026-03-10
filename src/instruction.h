@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <string>
 
+namespace srrarch {
+
 class Instruction {
 public:
   // Construct from raw 64-bit little-endian value
@@ -66,5 +68,7 @@ public:
 private:
   uint64_t raw; // Raw 64-bit instruction
 };
+
+} // namespace srrarch
 
 #endif // INSTRUCTION_H

@@ -19,6 +19,8 @@
 #include <string>
 #include <time.h>
 
+namespace srrarch {
+
 enum class LogLevel { DEBUG, INFO, WARNING, ERROR };
 
 class Logger {
@@ -60,9 +62,15 @@ private:
   std::mutex m_mutex;
 };
 
-#define LOG_DEBUG(...) Logger::instance().log(LogLevel::DEBUG, __VA_ARGS__)
-#define LOG_INFO(...) Logger::instance().log(LogLevel::INFO, __VA_ARGS__)
-#define LOG_WARN(...) Logger::instance().log(LogLevel::WARNING, __VA_ARGS__)
-#define LOG_ERROR(...) Logger::instance().log(LogLevel::ERROR, __VA_ARGS__)
+} // namespace srrarch
 
-#endif
+#define LOG_DEBUG(...)                                                         \
+  srrarch::Logger::instance().log(srrarch::LogLevel::DEBUG, __VA_ARGS__)
+#define LOG_INFO(...)                                                          \
+  srrarch::Logger::instance().log(srrarch::LogLevel::INFO, __VA_ARGS__)
+#define LOG_WARN(...)                                                          \
+  srrarch::Logger::instance().log(srrarch::LogLevel::WARNING, __VA_ARGS__)
+#define LOG_ERROR(...)                                                         \
+  srrarch::Logger::instance().log(srrarch::LogLevel::ERROR, __VA_ARGS__)
+
+#endif // SRRARCH_LOGGER_H

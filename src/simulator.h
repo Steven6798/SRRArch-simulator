@@ -20,6 +20,8 @@
 #include <memory>
 #include <vector>
 
+namespace srrarch {
+
 // Forward declaration
 class ElfLoader;
 
@@ -75,5 +77,7 @@ private:
   void exec_or(uint8_t dest, uint8_t src1, uint8_t src2);
   void exec_mov(uint8_t dest, uint8_t src);
 };
+
+} // namespace srrarch
 
 #endif // SIMULATOR_H

@@ -14,6 +14,8 @@
 #include <iomanip>
 #include <iostream>
 
+namespace srrarch {
+
 std::string register_to_string(uint8_t reg_num) {
   switch (reg_num) {
   case R0_PC:
@@ -131,3 +133,5 @@ void Registers::reset() {
   // SP typically starts high and grows down, but we'll let the program set it
   // You might want to initialize SP to a default stack address here
 }
+
+} // namespace srrarch

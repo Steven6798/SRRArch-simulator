@@ -15,6 +15,8 @@
 #include <cstdint>
 #include <string>
 
+namespace srrarch {
+
 // Custom opcodes as enum class for type safety
 enum class Opcode : uint8_t {
   NOP = 0x00,
@@ -48,5 +50,7 @@ constexpr const char *opcode_to_string(Opcode op) {
 
 // Decode one 8-byte instruction from an executable section
 void decode_instruction(const uint8_t *inst);
+
+} // namespace srrarch
 
 #endif // DECODER_H

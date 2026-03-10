@@ -16,6 +16,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace srrarch {
+
 Instruction::Instruction(uint64_t raw_value) : raw(raw_value) {}
 
 Instruction::Instruction(const uint8_t *bytes) : raw(0) {
@@ -95,3 +97,5 @@ void Instruction::print_bytes() const {
   }
   LOG_INFO("%s", ss.str().c_str());
 }
+
+} // namespace srrarch

@@ -13,6 +13,8 @@
 #include "logger.h"
 #include <cstdio>
 
+namespace srrarch {
+
 Logger &Logger::instance() {
   static Logger instance;
   return instance;
@@ -38,3 +40,5 @@ void Logger::printPrefix(LogLevel level) {
   }
   printf("%s", prefix);
 }
+
+} // namespace srrarch

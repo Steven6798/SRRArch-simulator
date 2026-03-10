@@ -26,6 +26,8 @@
 #include <string>
 #include <vector>
 
+namespace srrarch {
+
 struct SectionInfo {
   std::string name;
   uint64_t addr;
@@ -57,5 +59,7 @@ private:
   bool load_segments();
   void parse_sections();
 };
+
+} // namespace srrarch
 
 #endif // ELF_LOADER_H

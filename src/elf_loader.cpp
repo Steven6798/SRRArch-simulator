@@ -15,6 +15,8 @@
 #include "logger.h"
 #include <cstdint>
 
+namespace srrarch {
+
 ElfLoader::ElfLoader()
     : fd(-1), file_map(nullptr), ehdr(nullptr), entry(nullptr),
       is_loaded(false) {
@@ -192,3 +194,5 @@ void ElfLoader::parse_sections() {
 
   LOG_INFO("Found %zu executable sections", exec_sections.size());
 }
+
+} // namespace srrarch
