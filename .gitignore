@@ -1,0 +1,14 @@
+build/
+*.o
+*.a
+*.so
+*.swp
+*~
+.DS_Store
+compile_commands.json
+.vscode/
+.idea/
+cmake-build-*/
+bin/
+lib/
+EOF
