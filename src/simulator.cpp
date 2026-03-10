@@ -21,8 +21,7 @@
 #include <iomanip>
 
 Simulator::Simulator() = default;
-
-Simulator::~Simulator() = default; // unique_ptr handles cleanup
+Simulator::~Simulator() = default;
 
 bool Simulator::load_elf(const char *filename) {
   LOG_INFO("Loading ELF into simulator: %s", filename);
@@ -32,7 +31,7 @@ bool Simulator::load_elf(const char *filename) {
 
   if (!loader->load(filename)) {
     LOG_ERROR("Failed to load ELF file: %s", filename);
-    loader.reset();
+    loader.reset(); // Explicitly release (though it would happen automatically)
     return false;
   }
 

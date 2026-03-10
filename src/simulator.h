@@ -20,7 +20,6 @@
 #include <memory>
 #include <vector>
 
-// Forward declaration
 class ElfLoader;
 
 class Simulator {
@@ -45,6 +44,15 @@ public:
 
   // Stop simulation
   void stop() { running = false; }
+
+  // Delete copy constructor and assignment operator (unique_ptr can't be
+  // copied)
+  Simulator(const Simulator &) = delete;
+  Simulator &operator=(const Simulator &) = delete;
+
+  // Allow move operations
+  Simulator(Simulator &&) = default;
+  Simulator &operator=(Simulator &&) = default;
 
 private:
   Registers regs;
