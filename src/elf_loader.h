@@ -28,6 +28,22 @@
 
 namespace srrarch {
 
+enum class LoadResult {
+  SUCCESS,            ///< ELF loaded successfully
+  FILE_NOT_FOUND,     ///< File doesn't exist or can't be opened
+  STAT_FAILED,        ///< fstat() failed
+  INVALID_FILE_SIZE,  ///< File size is negative or zero
+  MMAP_FAILED,        ///< mmap() failed to map file
+  INVALID_ELF_MAGIC,  ///< Not a valid ELF file
+  UNSUPPORTED_ARCH,   ///< Not 64-bit
+  UNSUPPORTED_ENDIAN, ///< Not little-endian
+  NO_SECTIONS,        ///< No section headers found
+  CORRUPT_SECTION,    ///< Section data out of bounds
+  SEGMENT_LOAD_FAILED ///< Failed to load a program segment
+};
+
+const char *load_result_to_string(LoadResult result);
+
 struct SectionInfo {
   std::string name;
   uint64_t addr;
@@ -40,7 +56,7 @@ public:
   ElfLoader();
   ~ElfLoader();
 
-  bool load(const char *filename);
+  LoadResult load(const char *filename);
   void unload();
   void *get_entry_point() const;
   const std::vector<SectionInfo> &get_executable_sections() const {
@@ -56,8 +72,8 @@ private:
   bool is_loaded;
   std::vector<SectionInfo> exec_sections; // Stores executable sections
 
-  bool load_segments();
-  void parse_sections();
+  LoadResult load_segments();
+  LoadResult parse_sections();
 };
 
 } // namespace srrarch

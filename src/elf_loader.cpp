@@ -17,6 +17,35 @@
 
 namespace srrarch {
 
+const char *load_result_to_string(LoadResult result) {
+  switch (result) {
+  case LoadResult::SUCCESS:
+    return "Success";
+  case LoadResult::FILE_NOT_FOUND:
+    return "File not found";
+  case LoadResult::STAT_FAILED:
+    return "Failed to get file stats";
+  case LoadResult::INVALID_FILE_SIZE:
+    return "Invalid file size (negative or zero)";
+  case LoadResult::MMAP_FAILED:
+    return "Failed to memory-map file";
+  case LoadResult::INVALID_ELF_MAGIC:
+    return "Not a valid ELF file";
+  case LoadResult::UNSUPPORTED_ARCH:
+    return "Only 64-bit ELF is supported";
+  case LoadResult::UNSUPPORTED_ENDIAN:
+    return "Only little-endian ELF is supported";
+  case LoadResult::NO_SECTIONS:
+    return "No section headers found";
+  case LoadResult::CORRUPT_SECTION:
+    return "Section data out of file bounds";
+  case LoadResult::SEGMENT_LOAD_FAILED:
+    return "Failed to load program segment";
+  default:
+    return "Unknown error";
+  }
+}
+
 ElfLoader::ElfLoader()
     : fd(-1), file_map(nullptr), ehdr(nullptr), entry(nullptr),
       is_loaded(false) {
@@ -29,28 +58,28 @@ ElfLoader::~ElfLoader() {
   }
 }
 
-bool ElfLoader::load(const char *filename) {
+LoadResult ElfLoader::load(const char *filename) {
   LOG_INFO("Loading ELF file: %s", filename);
 
   // Open ELF file
   fd = open(filename, O_RDONLY);
   if (fd == -1) {
     LOG_ERROR("Failed to open file: %s", strerror(errno));
-    return false;
+    return LoadResult::FILE_NOT_FOUND;
   }
 
   // Get file size
   if (fstat(fd, &st) == -1) {
     LOG_ERROR("fstat failed: %s", strerror(errno));
     close(fd);
-    return false;
+    return LoadResult::STAT_FAILED;
   }
 
   // Validate file size is non-negative and fits in size_t
   if (st.st_size < 0) {
     LOG_ERROR("Invalid file size (negative)");
     close(fd);
-    return false;
+    return LoadResult::INVALID_FILE_SIZE;
   }
 
   LOG_DEBUG("File size: %ld bytes", st.st_size);
@@ -64,13 +93,12 @@ bool ElfLoader::load(const char *filename) {
   if (file_map == MAP_FAILED) {
     LOG_ERROR("mmap failed: %s", strerror(errno));
     close(fd);
-    return false;
+    return LoadResult::MMAP_FAILED;
   }
 
   // Close file descriptor – not needed after mmap
   close(fd);
   fd = -1;
-
   LOG_DEBUG("File mapped at %p", file_map);
 
   // Point to ELF header
@@ -81,7 +109,7 @@ bool ElfLoader::load(const char *filename) {
     LOG_ERROR("Not a valid ELF file");
     munmap(file_map, file_size);
     file_map = nullptr;
-    return false;
+    return LoadResult::INVALID_ELF_MAGIC;
   }
 
   // For now, only 64-bit little-endian executables
@@ -89,74 +117,61 @@ bool ElfLoader::load(const char *filename) {
     LOG_ERROR("Only 64-bit ELF is supported");
     munmap(file_map, file_size);
     file_map = nullptr;
-    return false;
+    return LoadResult::UNSUPPORTED_ARCH;
   }
 
   if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
     LOG_ERROR("Only little-endian ELF is supported");
     munmap(file_map, file_size);
     file_map = nullptr;
-    return false;
+    return LoadResult::UNSUPPORTED_ENDIAN;
   }
 
   LOG_DEBUG("ELF header validated: %d program headers, %d section headers",
             ehdr->e_phnum, ehdr->e_shnum);
 
   // Parse and load segments (existing placeholder)
-  if (!load_segments()) {
+  LoadResult result = load_segments();
+  if (result != LoadResult::SUCCESS) {
     munmap(file_map, file_size);
     file_map = nullptr;
-    return false;
+    return result;
   }
 
   // Parse section headers to collect executable sections
-  parse_sections();
+  result = parse_sections();
+  if (result != LoadResult::SUCCESS) {
+    munmap(file_map, file_size);
+    file_map = nullptr;
+    return result;
+  }
 
   // Set entry point
   entry = reinterpret_cast<void *>(ehdr->e_entry);
   LOG_INFO("Entry point: 0x%lx", reinterpret_cast<uintptr_t>(entry));
 
   is_loaded = true;
-  return true;
+  return LoadResult::SUCCESS;
 }
 
-void ElfLoader::unload() {
-  LOG_DEBUG("Unloading ELF");
-  if (file_map) {
-    size_t file_size = static_cast<size_t>(st.st_size);
-    munmap(file_map, file_size);
-    file_map = nullptr;
-  }
-  if (fd != -1) {
-    close(fd);
-    fd = -1;
-  }
-  exec_sections.clear();
-  is_loaded = false;
-  entry = nullptr;
-}
-
-void *ElfLoader::get_entry_point() const { return entry; }
-
-bool ElfLoader::load_segments() {
-  // Iterate over program headers and print each LOAD segment (placeholder)
+LoadResult ElfLoader::load_segments() {
   Elf64_Phdr *phdr = reinterpret_cast<Elf64_Phdr *>(file_map + ehdr->e_phoff);
   for (int i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type == PT_LOAD) {
       LOG_INFO("Loading segment at vaddr 0x%lx, size 0x%lx", phdr[i].p_vaddr,
                phdr[i].p_memsz);
-      // TODO: Actual loading logic with proper alignment and permissions
+      // TODO: Actual loading logic
     }
   }
-  return true;
+  return LoadResult::SUCCESS;
 }
 
-void ElfLoader::parse_sections() {
+LoadResult ElfLoader::parse_sections() {
   exec_sections.clear();
 
   if (ehdr->e_shnum == 0 || ehdr->e_shoff == 0) {
     LOG_INFO("No section headers found.");
-    return;
+    return LoadResult::NO_SECTIONS;
   }
 
   // Get section header string table
@@ -187,12 +202,32 @@ void ElfLoader::parse_sections() {
       } else {
         LOG_WARN("Section %s data out of file bounds", info.name.c_str());
         info.data = nullptr;
+        return LoadResult::CORRUPT_SECTION;
       }
       exec_sections.push_back(info);
     }
   }
 
   LOG_INFO("Found %zu executable sections", exec_sections.size());
+  return LoadResult::SUCCESS;
 }
+
+void ElfLoader::unload() {
+  LOG_DEBUG("Unloading ELF");
+  if (file_map) {
+    size_t file_size = static_cast<size_t>(st.st_size);
+    munmap(file_map, file_size);
+    file_map = nullptr;
+  }
+  if (fd != -1) {
+    close(fd);
+    fd = -1;
+  }
+  exec_sections.clear();
+  is_loaded = false;
+  entry = nullptr;
+}
+
+void *ElfLoader::get_entry_point() const { return entry; }
 
 } // namespace srrarch

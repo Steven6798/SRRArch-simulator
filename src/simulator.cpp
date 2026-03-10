@@ -32,8 +32,10 @@ bool Simulator::load_elf(const char *filename) {
   // Create and use ElfLoader to parse the ELF
   loader = std::make_unique<ElfLoader>();
 
-  if (!loader->load(filename)) {
-    LOG_ERROR("Failed to load ELF file: %s", filename);
+  LoadResult result = loader->load(filename);
+  if (result != LoadResult::SUCCESS) {
+    LOG_ERROR("Failed to load ELF file: %s - %s", filename,
+              load_result_to_string(result));
     loader.reset();
     return false;
   }
