@@ -19,7 +19,6 @@
 #include "logger.h"
 #include <cassert>
 #include <iomanip>
-#include <iostream>
 
 Simulator::Simulator() = default;
 
@@ -92,7 +91,7 @@ uint64_t Simulator::fetch() {
 }
 
 void Simulator::execute(uint64_t instruction) {
-  uint8_t opcode = instruction & 0xFF;
+  Opcode opcode = static_cast<Opcode>(instruction & 0xFF);
 
   // Log the instruction we're executing
   LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
@@ -105,24 +104,24 @@ void Simulator::execute(uint64_t instruction) {
   decode_instruction(bytes);
 
   switch (opcode) {
-  case OP_NOP:
+  case Opcode::NOP:
     exec_nop();
     break;
 
-  case OP_RETURN: {
+  case Opcode::RETURN: {
     uint8_t reg = (instruction >> 8) & 0x1F;
     exec_return(reg);
     break;
   }
 
-  case OP_GENINT: {
+  case Opcode::GENINT: {
     uint8_t reg = (instruction >> 8) & 0x1F;
     uint32_t imm = (instruction >> 13) & 0xFFFFFFFF;
     exec_genint(reg, imm);
     break;
   }
 
-  case OP_SHL: {
+  case Opcode::SHL: {
     uint8_t dest = (instruction >> 8) & 0x1F;
     uint8_t src1 = (instruction >> 13) & 0x1F;
     uint8_t src2 = (instruction >> 18) & 0x1F;
@@ -130,7 +129,7 @@ void Simulator::execute(uint64_t instruction) {
     break;
   }
 
-  case OP_OR: {
+  case Opcode::OR: {
     uint8_t dest = (instruction >> 8) & 0x1F;
     uint8_t src1 = (instruction >> 13) & 0x1F;
     uint8_t src2 = (instruction >> 18) & 0x1F;
@@ -138,7 +137,7 @@ void Simulator::execute(uint64_t instruction) {
     break;
   }
 
-  case OP_MOV: {
+  case Opcode::MOV: {
     uint8_t dest = (instruction >> 8) & 0x1F;
     uint8_t src = (instruction >> 13) & 0x1F;
     exec_mov(dest, src);
@@ -146,7 +145,8 @@ void Simulator::execute(uint64_t instruction) {
   }
 
   default:
-    LOG_ERROR("Unknown opcode 0x%02x at PC=0x%lx", opcode, regs.get_pc() - 8);
+    LOG_ERROR("Unknown opcode 0x%02x at PC=0x%lx", static_cast<uint8_t>(opcode),
+              regs.get_pc() - 8);
     running = false;
     break;
   }

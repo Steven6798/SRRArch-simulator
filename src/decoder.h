@@ -2,7 +2,9 @@
  * @file decoder.h
  * @brief Instruction decoder for SRRArch custom architecture
  *
- * Defines opcodes and provides decoding functionality for 64-bit instructions.
+ * Defines opcodes and provides decoding functionality for 64-bit
+ * instructions. Each instruction is 8 bytes with opcode in LSB
+ * and register fields in subsequent bits.
  *
  * @author SRRArch Simulator Team
  * @version 0.1.0
@@ -15,18 +17,36 @@
 #include <cstdint>
 #include <string>
 
-// Custom opcodes
-enum Opcode : uint8_t {
-  OP_NOP = 0x00,
-  OP_RETURN = 0x01,
-  OP_GENINT = 0x02,
-  OP_SHL = 0x03,
-  OP_OR = 0x04,
-  OP_MOV = 0x05
+// Custom opcodes as enum class for type safety
+enum class Opcode : uint8_t {
+  NOP = 0x00,
+  RETURN = 0x01,
+  GENINT = 0x02,
+  SHL = 0x03,
+  OR = 0x04,
+  MOV = 0x05,
+  COUNT // Automatically = 6, useful for bounds checking
 };
 
-// Convert opcode to string
-std::string opcode_to_string(uint8_t op);
+// Compile-time array of opcode names (index must match enum values)
+constexpr const char *OPCODE_NAMES[] = {
+    "NOP",    // 0x00
+    "RETURN", // 0x01
+    "GENINT", // 0x02
+    "SHL",    // 0x03
+    "OR",     // 0x04
+    "MOV"     // 0x05
+};
+
+// Compile-time assertion that COUNT matches array size
+static_assert(static_cast<size_t>(Opcode::COUNT) ==
+                  sizeof(OPCODE_NAMES) / sizeof(OPCODE_NAMES[0]),
+              "Opcode::COUNT must match OPCODE_NAMES array size");
+
+// Convert opcode to string at compile time
+constexpr const char *opcode_to_string(Opcode op) {
+  return OPCODE_NAMES[static_cast<size_t>(op)];
+}
 
 // Decode one 8-byte instruction from an executable section
 void decode_instruction(const uint8_t *inst);

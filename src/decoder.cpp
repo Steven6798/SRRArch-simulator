@@ -4,6 +4,7 @@
  *
  * Decodes 64-bit instructions into human-readable format.
  * Supports 6 instruction types: NOP, RETURN, GENINT, SHL, OR, MOV.
+ * Register fields are 5 bits each, immediates are 32 bits.
  *
  * @author SRRArch Simulator Team
  * @version 0.1.0
@@ -14,26 +15,7 @@
 #include "logger.h"
 #include <cstdint>
 #include <iomanip>
-#include <iostream>
-
-std::string opcode_to_string(uint8_t op) {
-  switch (op) {
-  case OP_NOP:
-    return "NOP";
-  case OP_RETURN:
-    return "RETURN";
-  case OP_GENINT:
-    return "GENINT";
-  case OP_SHL:
-    return "SHL";
-  case OP_OR:
-    return "OR";
-  case OP_MOV:
-    return "MOV";
-  default:
-    return "UNKNOWN";
-  }
-}
+#include <sstream>
 
 void decode_instruction(const uint8_t *inst) {
   std::stringstream ss;
@@ -52,21 +34,21 @@ void decode_instruction(const uint8_t *inst) {
     code |= static_cast<uint64_t>(inst[i]) << (i * 8);
   }
 
-  uint8_t op = code & 0xFF;
+  Opcode op = static_cast<Opcode>(code & 0xFF);
   ss << " | Instruction: " << opcode_to_string(op);
 
   // Decode operands based on opcode
   switch (op) {
-  case OP_NOP:
+  case Opcode::NOP:
     break;
 
-  case OP_RETURN: {
+  case Opcode::RETURN: {
     uint8_t reg = (code >> 8) & 0x1F;
     ss << " R" << static_cast<int>(reg);
     break;
   }
 
-  case OP_GENINT: {
+  case Opcode::GENINT: {
     uint8_t reg = (code >> 8) & 0x1F;
     uint32_t imm = (code >> 13) & 0xFFFFFFFF;
     ss << " R" << static_cast<int>(reg) << ", 0x" << std::hex << imm
@@ -74,8 +56,8 @@ void decode_instruction(const uint8_t *inst) {
     break;
   }
 
-  case OP_SHL:
-  case OP_OR: {
+  case Opcode::SHL:
+  case Opcode::OR: {
     uint8_t reg1 = (code >> 8) & 0x1F;
     uint8_t reg2 = (code >> 13) & 0x1F;
     uint8_t reg3 = (code >> 18) & 0x1F;
@@ -84,7 +66,7 @@ void decode_instruction(const uint8_t *inst) {
     break;
   }
 
-  case OP_MOV: {
+  case Opcode::MOV: {
     uint8_t reg1 = (code >> 8) & 0x1F;
     uint8_t reg2 = (code >> 13) & 0x1F;
     ss << " R" << static_cast<int>(reg1) << ", R" << static_cast<int>(reg2);
@@ -92,9 +74,9 @@ void decode_instruction(const uint8_t *inst) {
   }
 
   default:
+    // Unknown opcode – only raw bytes printed
     break;
   }
 
-  // Use LOG_INFO for instruction decoding output
   LOG_INFO("%s", ss.str().c_str());
 }
