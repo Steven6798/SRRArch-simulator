@@ -1,5 +1,5 @@
 # Main executable
-add_executable(SRRArch_simulator main.cpp)
+add_executable(SRRArch-simulator main.cpp)
 
 # Create libraries
 add_library(utils_lib logger.cpp)
@@ -14,7 +14,7 @@ target_include_directories(elf_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(decoder_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(registers_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(simulator_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SRRArch_simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SRRArch-simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Define library dependencies
 # simulator_lib depends on elf_lib, decoder_lib, and registers_lib
@@ -26,7 +26,7 @@ target_link_libraries(simulator_lib
 )
 
 # The main executable depends on all libraries
-target_link_libraries(SRRArch_simulator
+target_link_libraries(SRRArch-simulator
     PRIVATE
     simulator_lib
     utils_lib
@@ -34,4 +34,4 @@ target_link_libraries(SRRArch_simulator
 )
 
 # Install target (optional)
-install(TARGETS SRRArch_simulator DESTINATION bin)
+install(TARGETS SRRArch-simulator DESTINATION bin)

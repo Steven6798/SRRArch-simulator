@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(SRRArch_simulator VERSION 0.1.0 LANGUAGES CXX)
+project(SRRArch-simulator VERSION 0.1.0 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -28,8 +28,6 @@ include(CompilerOptions)
 
 # Add subdirectories
 add_subdirectory(src)
-# add_subdirectory(tests)
-# add_subdirectory(examples)
 
 # Enable testing
 enable_testing()
