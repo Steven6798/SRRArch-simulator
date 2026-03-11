@@ -2,7 +2,7 @@
  * @file logger.h
  * @brief Thread-safe logging utility
  *
- * Provides logging with multiple levels (DEBUG, INFO, WARNING, ERROR),
+ * Provides logging with multiple levels (DBG, INFO, WARNING, ERROR),
  * timestamps, and printf-style formatting. Thread-safe with mutex
  * protection.
  *
@@ -21,7 +21,7 @@
 
 namespace srrarch {
 
-enum class LogLevel { DEBUG, INFO, WARNING, ERROR };
+enum class LogLevel { DBG, INFO, WARNING, ERROR };
 
 class Logger {
 public:
@@ -64,8 +64,8 @@ private:
 
 } // namespace srrarch
 
-#define LOG_DEBUG(...)                                                         \
-  srrarch::Logger::instance().log(srrarch::LogLevel::DEBUG, __VA_ARGS__)
+#define LOG_DBG(...)                                                           \
+  srrarch::Logger::instance().log(srrarch::LogLevel::DBG, __VA_ARGS__)
 #define LOG_INFO(...)                                                          \
   srrarch::Logger::instance().log(srrarch::LogLevel::INFO, __VA_ARGS__)
 #define LOG_WARN(...)                                                          \

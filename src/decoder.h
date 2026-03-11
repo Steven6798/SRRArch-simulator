@@ -20,22 +20,52 @@ namespace srrarch {
 // Custom opcodes as enum class for type safety
 enum class Opcode : uint8_t {
   NOP = 0x00,
-  RETURN = 0x01,
-  GENINT = 0x02,
-  SHL = 0x03,
-  OR = 0x04,
-  MOV = 0x05,
-  COUNT // Automatically = 6, useful for bounds checking
+  ADD = 0x01,
+  SUB = 0x02,
+  MUL = 0x03,
+  SDIV = 0x04,
+  UDIV = 0x05,
+  AND = 0x06,
+  OR = 0x07,
+  XOR = 0x08,
+  SHL = 0x09,
+  SRA = 0x0a,
+  SRL = 0x0b,
+  CMPEQ = 0x0c,
+  CMPNE = 0x0d,
+  CMPLT = 0x0e,
+  CMPGT = 0x0f,
+  STORE = 0x10,
+  LOAD = 0x11,
+  RETURN = 0x12,
+  GENINT = 0x13,
+  MOV = 0x14,
+  COUNT // useful for bounds checking
 };
 
 // Compile-time array of opcode names (index must match enum values)
 constexpr const char *OPCODE_NAMES[] = {
     "NOP",    // 0x00
-    "RETURN", // 0x01
-    "GENINT", // 0x02
-    "SHL",    // 0x03
-    "OR",     // 0x04
-    "MOV"     // 0x05
+    "ADD",    // 0x01
+    "SUB",    // 0x02
+    "MUL",    // 0x03
+    "SDIV",   // 0x04
+    "UDIV",   // 0x05
+    "AND",    // 0x06
+    "OR",     // 0x07
+    "XOR",    // 0x08
+    "SHL",    // 0x09
+    "SRA",    // 0x0a
+    "SRL",    // 0x0b
+    "CMPEQ",  // 0x0c
+    "CMPNE",  // 0x0d
+    "CMPLT",  // 0x0e
+    "CMPGT",  // 0x0f
+    "STORE",  // 0x10
+    "LOAD",   // 0x11
+    "RETURN", // 0x12
+    "GENINT", // 0x13
+    "MOV"     // 0x14
 };
 
 // Compile-time assertion that COUNT matches array size

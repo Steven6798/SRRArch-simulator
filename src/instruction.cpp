@@ -29,18 +29,39 @@ Instruction::Instruction(const uint8_t *bytes) : raw(0) {
 
 size_t Instruction::register_count() const {
   switch (opcode()) {
+  // 0 registers
   case Opcode::NOP:
     return 0;
+
+  // 1 register
   case Opcode::RETURN:
-    return 1;
   case Opcode::GENINT:
     return 1;
-  case Opcode::SHL:
-    return 3;
-  case Opcode::OR:
-    return 3;
+
+  // 2 registers
   case Opcode::MOV:
+  case Opcode::LOAD:
+  case Opcode::STORE:
     return 2;
+
+  // 3 registers (most arithmetic/logic/shift/compare)
+  case Opcode::ADD:
+  case Opcode::SUB:
+  case Opcode::MUL:
+  case Opcode::SDIV:
+  case Opcode::UDIV:
+  case Opcode::AND:
+  case Opcode::OR:
+  case Opcode::XOR:
+  case Opcode::SHL:
+  case Opcode::SRA:
+  case Opcode::SRL:
+  case Opcode::CMPEQ:
+  case Opcode::CMPNE:
+  case Opcode::CMPLT:
+  case Opcode::CMPGT:
+    return 3;
+
   default:
     return 0;
   }
@@ -60,22 +81,54 @@ std::string Instruction::to_string() const {
 
   case Opcode::GENINT:
     ss << " R" << static_cast<int>(genint_reg()) << ", 0x" << std::hex
-       << immediate() << std::dec;
-    break;
-
-  case Opcode::SHL:
-    ss << " R" << static_cast<int>(shl_dest()) << ", R"
-       << static_cast<int>(shl_src1()) << ", R" << static_cast<int>(shl_src2());
-    break;
-
-  case Opcode::OR:
-    ss << " R" << static_cast<int>(or_dest()) << ", R"
-       << static_cast<int>(or_src1()) << ", R" << static_cast<int>(or_src2());
+       << genint_imm() << std::dec;
     break;
 
   case Opcode::MOV:
-    ss << " R" << static_cast<int>(dest_reg()) << ", R"
-       << static_cast<int>(src_reg());
+    ss << " R" << static_cast<int>(mov_dest()) << ", R"
+       << static_cast<int>(mov_src());
+    break;
+
+  case Opcode::LOAD:
+    ss << " R" << static_cast<int>(load_reg()) << ", R"
+       << static_cast<int>(load_base());
+    break;
+
+  case Opcode::STORE:
+    ss << " R" << static_cast<int>(store_base()) << ", R"
+       << static_cast<int>(store_reg());
+    break;
+
+  // Arithmetic/Logical (3-register format)
+  case Opcode::ADD:
+  case Opcode::SUB:
+  case Opcode::MUL:
+  case Opcode::SDIV:
+  case Opcode::UDIV:
+  case Opcode::AND:
+  case Opcode::OR:
+  case Opcode::XOR:
+    ss << " R" << static_cast<int>(arith_dest()) << ", R"
+       << static_cast<int>(arith_src1()) << ", R"
+       << static_cast<int>(arith_src2());
+    break;
+
+  // Shifts (3-register format)
+  case Opcode::SHL:
+  case Opcode::SRA:
+  case Opcode::SRL:
+    ss << " R" << static_cast<int>(shift_dest()) << ", R"
+       << static_cast<int>(shift_src()) << ", R"
+       << static_cast<int>(shift_amount());
+    break;
+
+  // Comparisons (3-register format)
+  case Opcode::CMPEQ:
+  case Opcode::CMPNE:
+  case Opcode::CMPLT:
+  case Opcode::CMPGT:
+    ss << " R" << static_cast<int>(cmp_dest()) << ", R"
+       << static_cast<int>(cmp_src1()) << ", R" << static_cast<int>(cmp_src2());
     break;
 
   default:

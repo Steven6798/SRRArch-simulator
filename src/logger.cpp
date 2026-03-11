@@ -25,8 +25,8 @@ void Logger::setLevel(LogLevel level) { m_level = level; }
 void Logger::printPrefix(LogLevel level) {
   const char *prefix;
   switch (level) {
-  case LogLevel::DEBUG:
-    prefix = "[DEBUG] ";
+  case LogLevel::DBG:
+    prefix = "[DBG] ";
     break;
   case LogLevel::INFO:
     prefix = "[INFO]  ";

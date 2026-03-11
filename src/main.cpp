@@ -19,11 +19,12 @@ int main(int argc, char *argv[]) {
   srrarch::Logger::instance().setLevel(srrarch::LogLevel::INFO);
   srrarch::Simulator sim;
 
-  if (sim.load_elf(argv[1])) {
+  srrarch::LoadResult result = sim.load_elf(argv[1]);
+  if (result == srrarch::LoadResult::SUCCESS) {
     sim.run();
     return 0;
   } else {
-    LOG_ERROR("Failed to load ELF.");
+    LOG_ERROR("Failed to load ELF: %s", srrarch::load_result_to_string(result));
     return 1;
   }
 }

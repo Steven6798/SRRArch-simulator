@@ -20,7 +20,7 @@
 namespace srrarch {
 
 bool Memory::load_segment(uint64_t addr, const uint8_t *src_data, size_t size) {
-  LOG_DEBUG("Loading segment at 0x%lx (size: %zu bytes)", addr, size);
+  LOG_DBG("Loading segment at 0x%lx (size: %zu bytes)", addr, size);
 
   for (size_t i = 0; i < size; i++) {
     this->data[addr + i] = src_data[i];
@@ -96,17 +96,17 @@ uint64_t Memory::read(uint64_t addr, size_t size) const {
     value |= static_cast<uint64_t>(data.at(addr + i)) << (i * 8);
   }
 
-  LOG_DEBUG("Read 0x%lx from 0x%lx (size: %zu)", value, addr, size);
+  LOG_DBG("Read 0x%lx from 0x%lx (size: %zu)", value, addr, size);
   return value;
 }
 
 void Memory::write_byte(uint64_t addr, uint8_t value) {
-  LOG_DEBUG("Writing 0x%02x to 0x%lx", value, addr);
+  LOG_DBG("Writing 0x%02x to 0x%lx", value, addr);
   data[addr] = value;
 }
 
 void Memory::write_word(uint64_t addr, uint16_t value) {
-  LOG_DEBUG("Writing 0x%04x to 0x%lx", value, addr);
+  LOG_DBG("Writing 0x%04x to 0x%lx", value, addr);
   for (size_t i = 0; i < 2; i++) {
     uint8_t byte = static_cast<uint8_t>((value >> (i * 8)) & 0xFF);
     data[addr + i] = byte;
@@ -114,14 +114,14 @@ void Memory::write_word(uint64_t addr, uint16_t value) {
 }
 
 void Memory::write_dword(uint64_t addr, uint32_t value) {
-  LOG_DEBUG("Writing 0x%08x to 0x%lx", value, addr);
+  LOG_DBG("Writing 0x%08x to 0x%lx", value, addr);
   for (size_t i = 0; i < 4; i++) {
     data[addr + i] = (value >> (i * 8)) & 0xFF;
   }
 }
 
 void Memory::write_qword(uint64_t addr, uint64_t value) {
-  LOG_DEBUG("Writing 0x%016lx to 0x%lx", value, addr);
+  LOG_DBG("Writing 0x%016lx to 0x%lx", value, addr);
   for (size_t i = 0; i < 8; i++) {
     data[addr + i] = (value >> (i * 8)) & 0xFF;
   }
@@ -133,7 +133,7 @@ void Memory::write(uint64_t addr, uint64_t value, size_t size) {
     return;
   }
 
-  LOG_DEBUG("Writing 0x%lx to 0x%lx (size: %zu)", value, addr, size);
+  LOG_DBG("Writing 0x%lx to 0x%lx (size: %zu)", value, addr, size);
   for (size_t i = 0; i < size; i++) {
     data[addr + i] = (value >> (i * 8)) & 0xFF;
   }

@@ -82,7 +82,7 @@ LoadResult ElfLoader::load(const char *filename) {
     return LoadResult::INVALID_FILE_SIZE;
   }
 
-  LOG_DEBUG("File size: %ld bytes", st.st_size);
+  LOG_DBG("File size: %ld bytes", st.st_size);
 
   // Cast to size_t - safe because we checked st.st_size >= 0
   size_t file_size = static_cast<size_t>(st.st_size);
@@ -99,7 +99,7 @@ LoadResult ElfLoader::load(const char *filename) {
   // Close file descriptor – not needed after mmap
   close(fd);
   fd = -1;
-  LOG_DEBUG("File mapped at %p", file_map);
+  LOG_DBG("File mapped at %p", file_map);
 
   // Point to ELF header
   ehdr = reinterpret_cast<Elf64_Ehdr *>(file_map);
@@ -127,8 +127,8 @@ LoadResult ElfLoader::load(const char *filename) {
     return LoadResult::UNSUPPORTED_ENDIAN;
   }
 
-  LOG_DEBUG("ELF header validated: %d program headers, %d section headers",
-            ehdr->e_phnum, ehdr->e_shnum);
+  LOG_DBG("ELF header validated: %d program headers, %d section headers",
+          ehdr->e_phnum, ehdr->e_shnum);
 
   // Parse and load segments (existing placeholder)
   LoadResult result = load_segments();
@@ -192,8 +192,8 @@ LoadResult ElfLoader::parse_sections() {
       info.addr = shdr->sh_addr;
       info.size = shdr->sh_size;
 
-      LOG_DEBUG("Found executable section: %s at 0x%lx (size: 0x%lx)",
-                info.name.c_str(), info.addr, info.size);
+      LOG_DBG("Found executable section: %s at 0x%lx (size: 0x%lx)",
+              info.name.c_str(), info.addr, info.size);
 
       // Ensure the section data lies within the file
       if (shdr->sh_offset + shdr->sh_size <=
@@ -213,7 +213,7 @@ LoadResult ElfLoader::parse_sections() {
 }
 
 void ElfLoader::unload() {
-  LOG_DEBUG("Unloading ELF");
+  LOG_DBG("Unloading ELF");
   if (file_map) {
     size_t file_size = static_cast<size_t>(st.st_size);
     munmap(file_map, file_size);
