@@ -62,6 +62,9 @@ public:
   const std::vector<SectionInfo> &get_executable_sections() const {
     return exec_sections;
   }
+  const std::vector<SectionInfo> &get_data_sections() const {
+    return data_sections;
+  }
 
 private:
   int fd;            // File descriptor (may be closed after mmap)
@@ -71,6 +74,7 @@ private:
   void *entry;       // Entry point address after loading
   bool is_loaded;
   std::vector<SectionInfo> exec_sections; // Stores executable sections
+  std::vector<SectionInfo> data_sections; // Stores data sections
 
   LoadResult load_segments();
   LoadResult parse_sections();

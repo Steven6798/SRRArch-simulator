@@ -168,6 +168,7 @@ LoadResult ElfLoader::load_segments() {
 
 LoadResult ElfLoader::parse_sections() {
   exec_sections.clear();
+  data_sections.clear();
 
   if (ehdr->e_shnum == 0 || ehdr->e_shoff == 0) {
     LOG_INFO("No section headers found.");
@@ -185,30 +186,39 @@ LoadResult ElfLoader::parse_sections() {
     Elf64_Shdr *shdr = reinterpret_cast<Elf64_Shdr *>(file_map + ehdr->e_shoff +
                                                       ehdr->e_shentsize * i);
 
-    if (shdr->sh_flags & SHF_EXECINSTR) {
-      SectionInfo info;
-      info.name =
-          (shdr->sh_name != 0) ? std::string(shstrtab + shdr->sh_name) : "";
-      info.addr = shdr->sh_addr;
-      info.size = shdr->sh_size;
+    // Skip sections that aren't allocated in memory
+    if (!(shdr->sh_flags & SHF_ALLOC)) {
+      continue;
+    }
 
+    SectionInfo info;
+    info.name =
+        (shdr->sh_name != 0) ? std::string(shstrtab + shdr->sh_name) : "";
+    info.addr = shdr->sh_addr;
+    info.size = shdr->sh_size;
+
+    // Ensure the section data lies within the file
+    if (shdr->sh_offset + shdr->sh_size <= static_cast<uint64_t>(st.st_size)) {
+      info.data = file_map + shdr->sh_offset;
+    } else {
+      LOG_WARN("Section %s data out of file bounds", info.name.c_str());
+      info.data = nullptr;
+      return LoadResult::CORRUPT_SECTION;
+    }
+
+    if (shdr->sh_flags & SHF_EXECINSTR) {
       LOG_DBG("Found executable section: %s at 0x%lx (size: 0x%lx)",
               info.name.c_str(), info.addr, info.size);
-
-      // Ensure the section data lies within the file
-      if (shdr->sh_offset + shdr->sh_size <=
-          static_cast<uint64_t>(st.st_size)) {
-        info.data = file_map + shdr->sh_offset;
-      } else {
-        LOG_WARN("Section %s data out of file bounds", info.name.c_str());
-        info.data = nullptr;
-        return LoadResult::CORRUPT_SECTION;
-      }
       exec_sections.push_back(info);
+    } else if (shdr->sh_flags & SHF_WRITE) {
+      LOG_DBG("Found data section: %s at 0x%lx (size: 0x%lx)",
+              info.name.c_str(), info.addr, info.size);
+      data_sections.push_back(info);
     }
   }
 
-  LOG_INFO("Found %zu executable sections", exec_sections.size());
+  LOG_INFO("Found %zu executable sections and %zu data sections",
+           exec_sections.size(), data_sections.size());
   return LoadResult::SUCCESS;
 }
 

@@ -44,14 +44,29 @@ LoadResult Simulator::load_elf(const char *filename) {
   LOG_INFO("Entry point set to 0x%lx", entry_point);
 
   // Load executable sections into memory
-  const auto &sections = loader->get_executable_sections();
+  const auto &exec_sections = loader->get_executable_sections();
   size_t total_bytes = 0;
 
-  for (const auto &sec : sections) {
-    LOG_INFO("Loading section %s at 0x%lx (size: 0x%lx bytes)",
+  for (const auto &sec : exec_sections) {
+    LOG_INFO("Loading executable section %s at 0x%lx (size: 0x%lx bytes)",
+             sec.name.c_str(), sec.addr, sec.size);
+    memory.load_segment(sec.addr, sec.data, sec.size);
+    total_bytes += sec.size;
+  }
+
+  // Load data sections into memory
+  const auto &data_sections = loader->get_data_sections();
+  for (const auto &sec : data_sections) {
+    LOG_INFO("Loading data section %s at 0x%lx (size: 0x%lx bytes)",
              sec.name.c_str(), sec.addr, sec.size);
 
-    // Use Memory class to load the segment
+    // Debug: show the first few bytes of .data
+    if (sec.name == ".data") {
+      LOG_INFO("  .data content: %02x %02x %02x %02x %02x %02x %02x %02x",
+               sec.data[0], sec.data[1], sec.data[2], sec.data[3], sec.data[4],
+               sec.data[5], sec.data[6], sec.data[7]);
+    }
+
     memory.load_segment(sec.addr, sec.data, sec.size);
     total_bytes += sec.size;
   }
