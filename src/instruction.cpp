@@ -31,11 +31,12 @@ size_t Instruction::register_count() const {
   switch (opcode()) {
   // 0 registers
   case Opcode::NOP:
+  case Opcode::RETURN:
     return 0;
 
   // 1 register
-  case Opcode::RETURN:
   case Opcode::GENINT:
+  case Opcode::CALL:
     return 1;
 
   // 2 registers
@@ -73,10 +74,7 @@ std::string Instruction::to_string() const {
 
   switch (opcode()) {
   case Opcode::NOP:
-    break;
-
   case Opcode::RETURN:
-    ss << " R" << static_cast<int>(return_reg());
     break;
 
   case Opcode::GENINT:
@@ -97,6 +95,10 @@ std::string Instruction::to_string() const {
   case Opcode::STORE:
     ss << " R" << static_cast<int>(store_base()) << ", R"
        << static_cast<int>(store_reg());
+    break;
+
+  case Opcode::CALL:
+    ss << " R" << static_cast<int>(call_target());
     break;
 
   // Arithmetic/Logical (3-register format)

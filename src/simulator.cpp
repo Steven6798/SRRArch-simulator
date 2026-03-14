@@ -105,7 +105,7 @@ void Simulator::execute(const Instruction &inst) {
     break;
 
   case Opcode::RETURN:
-    exec_return(inst.return_reg());
+    exec_return();
     break;
 
   case Opcode::GENINT:
@@ -177,6 +177,10 @@ void Simulator::execute(const Instruction &inst) {
     exec_store(inst.store_base(), inst.store_reg());
     break;
 
+  case Opcode::CALL:
+    exec_call(inst.call_target());
+    break;
+
   default:
     LOG_ERROR("Unknown opcode at PC=0x%lx", regs.get_pc() - 8);
     running = false;
@@ -222,11 +226,21 @@ void Simulator::run() {
 // Instruction implementations
 void Simulator::exec_nop() { LOG_DBG("  -> NOP"); }
 
-void Simulator::exec_return(uint8_t reg) {
-  uint64_t retval = regs.read(reg);
-  regs.set_retval(retval);
-  LOG_INFO("  -> RETURN: halting with return value %lu", retval);
-  running = false;
+void Simulator::exec_return() {
+  uint64_t return_addr = regs.read(RA_REG);  // R4
+  uint64_t return_value = regs.read(RV_REG); // R3
+
+  if (return_addr == 0) {
+    // Returning from _start (or any entry with R4=0) - program done
+    regs.set_retval(return_value);
+    LOG_INFO("  -> RETURN: program finished with value 0x%lx", return_value);
+    running = false;
+  } else {
+    // Normal function return
+    regs.set_pc(return_addr);
+    LOG_INFO("  -> RETURN: to 0x%lx (from R4), value 0x%lx in R3", return_addr,
+             return_value);
+  }
 }
 
 void Simulator::exec_genint(uint8_t reg, uint32_t imm) {
@@ -402,6 +416,20 @@ void Simulator::exec_store(uint8_t base, uint8_t reg) {
   uint64_t value = regs.read(reg);
   LOG_INFO("  -> STORE: [R%u] = R%u (0x%lx = 0x%lx)", base, reg, addr, value);
   memory.write_qword(addr, value);
+}
+
+void Simulator::exec_call(uint8_t target_reg) {
+  uint64_t target = regs.read(target_reg);
+  uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
+
+  // Save return address to link register (R4)
+  regs.write(RA_REG, return_addr);
+
+  // Jump to target
+  regs.set_pc(target);
+
+  LOG_INFO("  -> CALL R%u (0x%lx), return addr 0x%lx saved to R4", target_reg,
+           target, return_addr);
 }
 
 } // namespace srrarch

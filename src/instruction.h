@@ -70,6 +70,9 @@ public:
   uint8_t shift_src() const { return reg2(); }
   uint8_t shift_amount() const { return reg3(); }
 
+  // CALL (1 register: target address in register)
+  uint8_t call_target() const { return reg1(); }
+
   // Utility
   size_t register_count() const;
   std::string to_string() const;

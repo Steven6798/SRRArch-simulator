@@ -56,6 +56,9 @@ public:
   // Stop simulation
   void stop() { running = false; }
 
+  static constexpr uint8_t RA_REG = 4;
+  static constexpr uint8_t RV_REG = 3;
+
 private:
   Registers regs;
   std::unique_ptr<ElfLoader> loader;
@@ -72,7 +75,7 @@ private:
 
   // Instruction implementations
   void exec_nop();
-  void exec_return(uint8_t reg);
+  void exec_return();
   void exec_genint(uint8_t reg, uint32_t imm);
   void exec_mov(uint8_t dest, uint8_t src);
 
@@ -102,6 +105,8 @@ private:
   // Memory operations
   void exec_load(uint8_t reg, uint8_t base);
   void exec_store(uint8_t base, uint8_t reg);
+
+  void exec_call(uint8_t target_reg);
 };
 
 } // namespace srrarch
