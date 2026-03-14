@@ -93,6 +93,16 @@ uint64_t Simulator::fetch() {
 }
 
 void Simulator::execute(const Instruction &inst) {
+  // Validate opcode before execution
+  uint8_t op = static_cast<uint8_t>(inst.opcode());
+  if (op >= static_cast<uint8_t>(Opcode::COUNT)) {
+    LOG_ERROR("Invalid opcode 0x%02x at PC=0x%lx", op, regs.get_pc() - 8);
+    LOG_ERROR("  Raw instruction: 0x%016lx", inst.raw_value());
+    LOG_ERROR("  Halting simulation");
+    running = false;
+    return;
+  }
+
   LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
 
   // Decode and print using Instruction class
@@ -179,6 +189,13 @@ void Simulator::execute(const Instruction &inst) {
 
   case Opcode::CALL:
     exec_call(inst.call_target());
+    break;
+
+  case Opcode::BR:
+    exec_br(inst.br_target());
+    break;
+  case Opcode::BRCOND:
+    exec_brcond(inst.brcond_reg(), inst.brcond_target());
     break;
 
   default:
@@ -430,6 +447,30 @@ void Simulator::exec_call(uint8_t target_reg) {
 
   LOG_INFO("  -> CALL R%u (0x%lx), return addr 0x%lx saved to R4", target_reg,
            target, return_addr);
+}
+
+void Simulator::exec_br(uint32_t target_addr) {
+  uint64_t current_pc = regs.get_pc() - 8;
+
+  // Set PC to absolute target
+  regs.set_pc(target_addr);
+
+  LOG_INFO("  -> BR: 0x%lx -> 0x%x", current_pc, target_addr);
+}
+
+void Simulator::exec_brcond(uint8_t cond_reg, uint32_t target_addr) {
+  uint64_t cond_value = regs.read(cond_reg);
+
+  if (cond_value != 0) {
+    // Condition true - branch to absolute address
+    regs.set_pc(target_addr);
+    LOG_INFO("  -> BRCOND R%d (0x%lx): TRUE, branching to 0x%x", cond_reg,
+             cond_value, target_addr);
+  } else {
+    // Condition false - continue
+    LOG_INFO("  -> BRCOND R%d (0x%lx): FALSE, continuing", cond_reg,
+             cond_value);
+  }
 }
 
 } // namespace srrarch

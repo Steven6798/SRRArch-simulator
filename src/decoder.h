@@ -41,6 +41,8 @@ enum class Opcode : uint8_t {
   GENINT = 0x13,
   MOV = 0x14,
   CALL = 0x15,
+  BRCOND = 0x16,
+  BR = 0x17,
   COUNT // useful for bounds checking
 };
 
@@ -67,7 +69,9 @@ constexpr const char *OPCODE_NAMES[] = {
     "RETURN", // 0x12
     "GENINT", // 0x13
     "MOV",    // 0x14
-    "CALL"    // 0x15
+    "CALL",   // 0x15
+    "BRCOND", // 0x16
+    "BR"      // 0x17
 };
 
 // Compile-time assertion that COUNT matches array size

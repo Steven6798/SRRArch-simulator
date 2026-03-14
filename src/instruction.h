@@ -73,6 +73,21 @@ public:
   // CALL (1 register: target address in register)
   uint8_t call_target() const { return reg1(); }
 
+  // For BRCOND - 32-bit absolute target address starting at bit 13
+  uint32_t brcond_target() const {
+    uint32_t imm = (raw >> 13) & 0xFFFFFFFF;
+    return imm;
+  }
+
+  // For BRCOND - condition register
+  uint8_t brcond_reg() const { return reg1(); }
+
+  // For BR - 32-bit absolute target address starting at bit 8
+  uint32_t br_target() const {
+    uint32_t imm = (raw >> 8) & 0xFFFFFFFF;
+    return imm;
+  }
+
   // Utility
   size_t register_count() const;
   std::string to_string() const;

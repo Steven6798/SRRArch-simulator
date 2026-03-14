@@ -32,11 +32,13 @@ size_t Instruction::register_count() const {
   // 0 registers
   case Opcode::NOP:
   case Opcode::RETURN:
+  case Opcode::BR:
     return 0;
 
   // 1 register
   case Opcode::GENINT:
   case Opcode::CALL:
+  case Opcode::BRCOND:
     return 1;
 
   // 2 registers
@@ -131,6 +133,14 @@ std::string Instruction::to_string() const {
   case Opcode::CMPGT:
     ss << " R" << static_cast<int>(cmp_dest()) << ", R"
        << static_cast<int>(cmp_src1()) << ", R" << static_cast<int>(cmp_src2());
+    break;
+
+  case Opcode::BR:
+    ss << " 0x" << std::hex << br_target() << std::dec;
+    break;
+  case Opcode::BRCOND:
+    ss << " R" << static_cast<int>(brcond_reg()) << ", 0x" << std::hex
+       << brcond_target() << std::dec;
     break;
 
   default:

@@ -107,6 +107,9 @@ private:
   void exec_store(uint8_t base, uint8_t reg);
 
   void exec_call(uint8_t target_reg);
+
+  void exec_br(uint32_t target_addr);
+  void exec_brcond(uint8_t cond_reg, uint32_t target_addr);
 };
 
 } // namespace srrarch
