@@ -66,6 +66,9 @@ public:
     return data_sections;
   }
 
+  // just check if printf is undefined
+  bool is_printf_undefined() const { return printf_undefined; }
+
 private:
   int fd;            // File descriptor (may be closed after mmap)
   struct stat st;    // File stat info (holds size)
@@ -75,9 +78,10 @@ private:
   bool is_loaded;
   std::vector<SectionInfo> exec_sections; // Stores executable sections
   std::vector<SectionInfo> data_sections; // Stores data sections
-
+  bool printf_undefined = false;
   LoadResult load_segments();
   LoadResult parse_sections();
+  LoadResult parse_symbols();
 };
 
 } // namespace srrarch

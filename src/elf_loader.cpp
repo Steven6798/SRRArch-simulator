@@ -146,6 +146,14 @@ LoadResult ElfLoader::load(const char *filename) {
     return result;
   }
 
+  // Parse symbols
+  result = parse_symbols();
+  if (result != LoadResult::SUCCESS) {
+    munmap(file_map, file_size);
+    file_map = nullptr;
+    return result;
+  }
+
   // Set entry point
   entry = reinterpret_cast<void *>(ehdr->e_entry);
   LOG_INFO("Entry point: 0x%lx", reinterpret_cast<uintptr_t>(entry));
@@ -210,7 +218,7 @@ LoadResult ElfLoader::parse_sections() {
       LOG_DBG("Found executable section: %s at 0x%lx (size: 0x%lx)",
               info.name.c_str(), info.addr, info.size);
       exec_sections.push_back(info);
-    } else if (shdr->sh_flags & SHF_WRITE) {
+    } else {
       LOG_DBG("Found data section: %s at 0x%lx (size: 0x%lx)",
               info.name.c_str(), info.addr, info.size);
       data_sections.push_back(info);
@@ -219,6 +227,57 @@ LoadResult ElfLoader::parse_sections() {
 
   LOG_INFO("Found %zu executable sections and %zu data sections",
            exec_sections.size(), data_sections.size());
+  return LoadResult::SUCCESS;
+}
+
+LoadResult ElfLoader::parse_symbols() {
+  printf_undefined = false;
+
+  // Find the symbol table section
+  Elf64_Shdr *symtab_hdr = nullptr;
+  Elf64_Shdr *strtab_hdr = nullptr;
+
+  for (int i = 0; i < ehdr->e_shnum; ++i) {
+    Elf64_Shdr *shdr = reinterpret_cast<Elf64_Shdr *>(file_map + ehdr->e_shoff +
+                                                      ehdr->e_shentsize * i);
+
+    if (shdr->sh_type == SHT_SYMTAB) {
+      symtab_hdr = shdr;
+    } else if (shdr->sh_type == SHT_STRTAB && i != ehdr->e_shstrndx) {
+      // This might be the string table for symbols
+      // We'll identify it properly later
+      if (strtab_hdr == nullptr && shdr->sh_entsize == 0) {
+        strtab_hdr = shdr;
+      }
+    }
+  }
+
+  if (!symtab_hdr || !strtab_hdr) {
+    LOG_DBG("No symbol table found");
+    return LoadResult::SUCCESS; // Not an error, just no symbols
+  }
+
+  // Get string table data
+  const char *strtab =
+      reinterpret_cast<const char *>(file_map + strtab_hdr->sh_offset);
+
+  // Parse symbols
+  size_t num_symbols = symtab_hdr->sh_size / symtab_hdr->sh_entsize;
+  Elf64_Sym *sym =
+      reinterpret_cast<Elf64_Sym *>(file_map + symtab_hdr->sh_offset);
+
+  for (size_t i = 0; i < num_symbols; ++i) {
+    if (sym[i].st_name != 0) {
+      std::string name = std::string(strtab + sym[i].st_name);
+
+      // ONLY check for printf
+      if (name == "printf") {
+        printf_undefined = (sym[i].st_shndx == SHN_UNDEF);
+        LOG_DBG("printf is %s", printf_undefined ? "undefined" : "defined");
+      }
+    }
+  }
+
   return LoadResult::SUCCESS;
 }
 

@@ -59,14 +59,6 @@ LoadResult Simulator::load_elf(const char *filename) {
   for (const auto &sec : data_sections) {
     LOG_INFO("Loading data section %s at 0x%lx (size: 0x%lx bytes)",
              sec.name.c_str(), sec.addr, sec.size);
-
-    // Debug: show the first few bytes of .data
-    if (sec.name == ".data") {
-      LOG_INFO("  .data content: %02x %02x %02x %02x %02x %02x %02x %02x",
-               sec.data[0], sec.data[1], sec.data[2], sec.data[3], sec.data[4],
-               sec.data[5], sec.data[6], sec.data[7]);
-    }
-
     memory.load_segment(sec.addr, sec.data, sec.size);
     total_bytes += sec.size;
   }
@@ -439,6 +431,23 @@ void Simulator::exec_call(uint8_t target_reg) {
   uint64_t target = regs.read(target_reg);
   uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
 
+  // Simple check for printf
+  if (loader && loader->is_printf_undefined() && target == 0) {
+    LOG_INFO("  -> CALL to printf detected");
+    exec_printf();
+    regs.set_pc(return_addr);
+    return;
+  }
+
+  // Validate target address
+  if (!memory.is_mapped(target)) {
+    LOG_ERROR("  -> CALL R%u: target address 0x%lx is not mapped in memory!",
+              target_reg, target);
+    LOG_ERROR("  -> Halting simulation due to invalid call target");
+    running = false;
+    return;
+  }
+
   // Save return address to link register (R4)
   regs.write(RA_REG, return_addr);
 
@@ -447,6 +456,156 @@ void Simulator::exec_call(uint8_t target_reg) {
 
   LOG_INFO("  -> CALL R%u (0x%lx), return addr 0x%lx saved to R4", target_reg,
            target, return_addr);
+}
+
+void Simulator::exec_printf() {
+  uint64_t fp = regs.get_fp();
+  uint64_t sp = regs.get_sp();
+
+  uint64_t format_addr;
+  uint64_t arg1 = 0;
+  uint64_t arg2 = 0;
+  std::string format;
+
+  // Determine where arguments are based on call context
+  if (fp == 0x80000000) {
+    // Called from _start - arguments are on the stack relative to SP
+    LOG_DBG("  -> printf: called from _start (SP=0x%lx)", sp);
+
+    // In _start, the string address is at [SP]
+    if (!memory.is_mapped(sp)) {
+      LOG_ERROR("  -> printf error: SP 0x%lx not mapped!", sp);
+      return;
+    }
+    format_addr = memory.read_qword(sp);
+
+    // Additional arguments would be at SP+8 and SP+16
+    if (memory.is_mapped(sp + 8)) {
+      arg1 = memory.read_qword(sp + 8);
+    }
+    if (memory.is_mapped(sp + 16)) {
+      arg2 = memory.read_qword(sp + 16);
+    }
+  } else {
+    // Normal function call - arguments are at FP + 16
+    LOG_DBG("  -> printf: called from function (FP=0x%lx)", fp);
+
+    uint64_t args_base = fp + 16;
+    if (!memory.is_mapped(args_base)) {
+      LOG_ERROR("  -> printf error: args_base 0x%lx not mapped!", args_base);
+      return;
+    }
+
+    format_addr = memory.read_qword(args_base);
+    arg1 = memory.read_qword(args_base + 8);
+    arg2 = memory.read_qword(args_base + 16);
+  }
+
+  // Validate format string address
+  if (!memory.is_mapped(format_addr)) {
+    LOG_ERROR("  -> printf error: format string address 0x%lx not mapped!",
+              format_addr);
+    return;
+  }
+
+  // Read format string from memory
+  uint64_t addr = format_addr;
+  uint8_t byte;
+  while ((byte = memory.read_byte(addr++)) != 0) {
+    format += static_cast<char>(byte);
+  }
+
+  // Count format specifiers to determine how many arguments to use
+  int expected_args = 0;
+  for (size_t i = 0; i < format.length(); i++) {
+    if (format[i] == '%' && i + 1 < format.length()) {
+      char next = format[i + 1];
+      if (next != '%') { // %% is escaped percent
+        expected_args++;
+      }
+    }
+  }
+
+  // Build output string with proper formatting
+  std::string output;
+  size_t arg_idx = 0;
+
+  for (size_t i = 0; i < format.length(); i++) {
+    if (format[i] == '%' && i + 1 < format.length()) {
+      char spec = format[i + 1];
+      i++; // Skip the specifier
+
+      if (spec == '%') {
+        output += '%'; // Escaped percent
+      } else {
+        // Get the appropriate argument
+        uint64_t current_arg = 0;
+        if (arg_idx == 0)
+          current_arg = arg1;
+        else if (arg_idx == 1)
+          current_arg = arg2;
+
+        // Format based on specifier
+        char buffer[32];
+        switch (spec) {
+        case 'd':
+        case 'i':
+          snprintf(buffer, sizeof(buffer), "%ld",
+                   static_cast<long>(current_arg));
+          output += buffer;
+          break;
+        case 'u':
+          snprintf(buffer, sizeof(buffer), "%lu",
+                   static_cast<unsigned long>(current_arg));
+          output += buffer;
+          break;
+        case 'x':
+        case 'X':
+          snprintf(buffer, sizeof(buffer), "0x%lx", current_arg);
+          output += buffer;
+          break;
+        case 'c':
+          output += static_cast<char>(current_arg & 0xFF);
+          break;
+        case 's':
+          // String argument - address of another string
+          {
+            uint64_t str_addr = current_arg;
+            if (memory.is_mapped(str_addr)) {
+              std::string str;
+              uint64_t s_addr = str_addr;
+              uint8_t s_byte;
+              while ((s_byte = memory.read_byte(s_addr++)) != 0) {
+                str += static_cast<char>(s_byte);
+              }
+              output += str;
+            } else {
+              output += "(null)";
+            }
+          }
+          break;
+        default:
+          // Unknown specifier - just print it raw
+          snprintf(buffer, sizeof(buffer), "<?>");
+          output += buffer;
+          break;
+        }
+        arg_idx++;
+      }
+    } else {
+      output += format[i];
+    }
+  }
+
+  // Log the printf call details
+  LOG_INFO("  -> printf: \"%s\"", format.c_str());
+  if (expected_args > 0)
+    LOG_INFO("  ->   arg1: 0x%lx (%ld)", arg1, arg1);
+  if (expected_args > 1)
+    LOG_INFO("  ->   arg2: 0x%lx (%ld)", arg2, arg2);
+
+  // Output to stdout
+  std::cout << output;
 }
 
 void Simulator::exec_br(uint32_t target_addr) {

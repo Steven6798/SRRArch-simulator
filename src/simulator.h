@@ -108,6 +108,9 @@ private:
 
   void exec_call(uint8_t target_reg);
 
+  // Special case to handle print until it can be compiler natively.
+  void exec_printf();
+
   void exec_br(uint32_t target_addr);
   void exec_brcond(uint8_t cond_reg, uint32_t target_addr);
 };
