@@ -16,6 +16,7 @@
 #include "simulator.h"
 #include "elf_loader.h"
 #include "logger.h"
+#include "memory.h"
 #include <cassert>
 #include <iomanip>
 
@@ -171,12 +172,40 @@ void Simulator::execute(const Instruction &inst) {
     exec_cmpgt(inst.cmp_dest(), inst.cmp_src1(), inst.cmp_src2());
     break;
 
-    // Memory
-  case Opcode::LOAD:
-    exec_load(inst.load_reg(), inst.load_base());
+  // Memory
+  case Opcode::STOREB:
+    exec_storeb(inst.store_base(), inst.store_source());
+    break;
+  case Opcode::STOREH:
+    exec_storeh(inst.store_base(), inst.store_source());
+    break;
+  case Opcode::STOREW:
+    exec_storew(inst.store_base(), inst.store_source());
     break;
   case Opcode::STORE:
-    exec_store(inst.store_base(), inst.store_reg());
+    exec_store(inst.store_base(), inst.store_source());
+    break;
+
+  case Opcode::LOADBZ:
+    exec_loadbz(inst.load_dest(), inst.load_base());
+    break;
+  case Opcode::LOADBS:
+    exec_loadbs(inst.load_dest(), inst.load_base());
+    break;
+  case Opcode::LOADHZ:
+    exec_loadhz(inst.load_dest(), inst.load_base());
+    break;
+  case Opcode::LOADHS:
+    exec_loadhs(inst.load_dest(), inst.load_base());
+    break;
+  case Opcode::LOADWZ:
+    exec_loadwz(inst.load_dest(), inst.load_base());
+    break;
+  case Opcode::LOADWS:
+    exec_loadws(inst.load_dest(), inst.load_base());
+    break;
+  case Opcode::LOAD:
+    exec_load(inst.load_dest(), inst.load_base());
     break;
 
   case Opcode::CALL:
@@ -413,18 +442,101 @@ void Simulator::exec_cmpgt(uint8_t dest, uint8_t src1, uint8_t src2) {
 }
 
 // Memory operations
-void Simulator::exec_load(uint8_t reg, uint8_t base) {
+void Simulator::exec_storeb(uint8_t base, uint8_t src) {
   uint64_t addr = regs.read(base);
-  uint64_t value = memory.read_qword(addr);
-  LOG_INFO("  -> LOAD: R%u = [R%u] (0x%lx = 0x%lx)", reg, base, addr, value);
-  regs.write(reg, value);
+  uint64_t value = regs.read(src);
+
+  memory.write_byte(addr, value & 0xFF);
+  LOG_INFO("  -> STOREB: [R%u] = R%u (0x%lx = 0x%02llx)", base, src, addr,
+           value & 0xFF);
 }
 
-void Simulator::exec_store(uint8_t base, uint8_t reg) {
+void Simulator::exec_storeh(uint8_t base, uint8_t src) {
   uint64_t addr = regs.read(base);
-  uint64_t value = regs.read(reg);
-  LOG_INFO("  -> STORE: [R%u] = R%u (0x%lx = 0x%lx)", base, reg, addr, value);
+  uint64_t value = regs.read(src);
+
+  memory.write_word(addr, value & 0xFFFF);
+  LOG_INFO("  -> STOREH: [R%u] = R%u (0x%lx = 0x%04llx)", base, src, addr,
+           value & 0xFFFF);
+}
+
+void Simulator::exec_storew(uint8_t base, uint8_t src) {
+  uint64_t addr = regs.read(base);
+  uint64_t value = regs.read(src);
+
+  memory.write_dword(addr, value & 0xFFFFFFFF);
+  LOG_INFO("  -> STOREW: [R%u] = R%u (0x%lx = 0x%08llx)", base, src, addr,
+           value & 0xFFFFFFFF);
+}
+
+void Simulator::exec_store(uint8_t base, uint8_t src) {
+  uint64_t addr = regs.read(base);
+  uint64_t value = regs.read(src);
+
   memory.write_qword(addr, value);
+  LOG_INFO("  -> STORE: [R%u] = R%u (0x%lx = 0x%lx)", base, src, addr, value);
+}
+
+void Simulator::exec_loadbz(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  uint8_t value = memory.read_byte(addr);
+
+  regs.write(dest, value);
+  LOG_INFO("  -> LOADBZ: R%u = [R%u] (0x%lx = 0x%02llx)", dest, base, addr,
+           value);
+}
+
+void Simulator::exec_loadbs(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  int8_t value = static_cast<int8_t>(memory.read_byte(addr));
+
+  regs.write(dest, static_cast<uint64_t>(value));
+  LOG_INFO("  -> LOADBS: R%u = [R%u] (0x%lx = 0x%02llx -> 0x%016llx)", dest,
+           base, addr, static_cast<uint8_t>(value), regs.read(dest));
+}
+
+void Simulator::exec_loadhz(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  uint16_t value = memory.read_word(addr);
+
+  regs.write(dest, value);
+  LOG_INFO("  -> LOADHZ: R%u = [R%u] (0x%lx = 0x%04llx)", dest, base, addr,
+           value);
+}
+
+void Simulator::exec_loadhs(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  int16_t value = static_cast<int16_t>(memory.read_word(addr));
+
+  regs.write(dest, static_cast<uint64_t>(value));
+  LOG_INFO("  -> LOADHS: R%u = [R%u] (0x%lx = 0x%04llx -> 0x%016llx)", dest,
+           base, addr, static_cast<uint16_t>(value), regs.read(dest));
+}
+
+void Simulator::exec_loadwz(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  uint32_t value = memory.read_dword(addr);
+
+  regs.write(dest, value);
+  LOG_INFO("  -> LOADWZ: R%u = [R%u] (0x%lx = 0x%08llx)", dest, base, addr,
+           value);
+}
+
+void Simulator::exec_loadws(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  int32_t value = static_cast<int32_t>(memory.read_dword(addr));
+
+  regs.write(dest, static_cast<uint64_t>(value));
+  LOG_INFO("  -> LOADWS: R%u = [R%u] (0x%lx = 0x%08llx -> 0x%016llx)", dest,
+           base, addr, static_cast<uint32_t>(value), regs.read(dest));
+}
+
+void Simulator::exec_load(uint8_t dest, uint8_t base) {
+  uint64_t addr = regs.read(base);
+  uint64_t value = memory.read_qword(addr);
+
+  regs.write(dest, value);
+  LOG_INFO("  -> LOAD: R%u = [R%u] (0x%lx = 0x%lx)", dest, base, addr, value);
 }
 
 void Simulator::exec_call(uint8_t target_reg) {
@@ -435,7 +547,6 @@ void Simulator::exec_call(uint8_t target_reg) {
   if (loader && loader->is_printf_undefined() && target == 0) {
     LOG_INFO("  -> CALL to printf detected");
     exec_printf();
-    regs.set_pc(return_addr);
     return;
   }
 

@@ -57,15 +57,15 @@ public:
   bool is_mapped(uint64_t addr) const;
   size_t total_bytes() const { return data.size(); }
 
+  // Helper for bounds checking
+  bool check_range(uint64_t addr, size_t size) const;
+
   // Debug
   void dump_segment(uint64_t start, uint64_t end) const;
   void dump() const;
 
 private:
   std::map<uint64_t, uint8_t> data;
-
-  // Helper for bounds checking
-  bool check_range(uint64_t addr, size_t size) const;
 };
 
 } // namespace srrarch

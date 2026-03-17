@@ -43,7 +43,16 @@ size_t Instruction::register_count() const {
 
   // 2 registers
   case Opcode::MOV:
+  case Opcode::LOADBZ:
+  case Opcode::LOADBS:
+  case Opcode::LOADHZ:
+  case Opcode::LOADHS:
+  case Opcode::LOADWZ:
+  case Opcode::LOADWS:
   case Opcode::LOAD:
+  case Opcode::STOREB:
+  case Opcode::STOREH:
+  case Opcode::STOREW:
   case Opcode::STORE:
     return 2;
 
@@ -89,14 +98,23 @@ std::string Instruction::to_string() const {
        << static_cast<int>(mov_src());
     break;
 
+  case Opcode::LOADBZ:
+  case Opcode::LOADBS:
+  case Opcode::LOADHZ:
+  case Opcode::LOADHS:
+  case Opcode::LOADWZ:
+  case Opcode::LOADWS:
   case Opcode::LOAD:
-    ss << " R" << static_cast<int>(load_reg()) << ", R"
+    ss << " R" << static_cast<int>(load_dest()) << ", R"
        << static_cast<int>(load_base());
     break;
 
+  case Opcode::STOREB:
+  case Opcode::STOREH:
+  case Opcode::STOREW:
   case Opcode::STORE:
     ss << " R" << static_cast<int>(store_base()) << ", R"
-       << static_cast<int>(store_reg());
+       << static_cast<int>(store_source());
     break;
 
   case Opcode::CALL:

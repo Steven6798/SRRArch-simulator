@@ -46,12 +46,11 @@ public:
   uint8_t mov_dest() const { return reg1(); }
   uint8_t mov_src() const { return reg2(); }
 
-  // LOAD/STORE (2 registers: base, src/dest) - register indirect
-  uint8_t load_reg() const { return reg1(); }  // Destination register
-  uint8_t load_base() const { return reg2(); } // Base address register
-
-  uint8_t store_base() const { return reg1(); } // Base address register
-  uint8_t store_reg() const { return reg2(); }  // Source register
+  // For loads/stores
+  uint8_t load_dest() const { return reg1(); }
+  uint8_t load_base() const { return reg2(); }
+  uint8_t store_base() const { return reg1(); }
+  uint8_t store_source() const { return reg2(); }
 
   // RETURN (1 register)
   uint8_t return_reg() const { return reg1(); }
