@@ -66,9 +66,11 @@ LoadResult Simulator::load_elf(const char *filename) {
 
   LOG_INFO("Loaded %zu bytes into memory", total_bytes);
 
-  // Initialize stack pointer
+  // Initialize stack and frame pointers
   regs.set_sp(0x80000000);
+  regs.set_fp(0x80000000);
   LOG_DBG("Stack pointer initialized to 0x%lx", regs.get_sp());
+  LOG_DBG("Frame pointer initialized to 0x%lx", regs.get_fp());
 
   return LoadResult::SUCCESS;
 }
@@ -540,6 +542,7 @@ void Simulator::exec_load(uint8_t dest, uint8_t base) {
 }
 
 void Simulator::exec_call(uint8_t target_reg) {
+  // dump_stack_frame();
   uint64_t target = regs.read(target_reg);
   uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
 
@@ -740,6 +743,85 @@ void Simulator::exec_brcond(uint8_t cond_reg, uint32_t target_addr) {
     // Condition false - continue
     LOG_INFO("  -> BRCOND R%d (0x%lx): FALSE, continuing", cond_reg,
              cond_value);
+  }
+}
+
+void Simulator::dump_stack(uint64_t bytes) const {
+  uint64_t sp = regs.get_sp();
+  uint64_t fp = regs.get_fp();
+
+  LOG_INFO("=== Stack Dump (SP=0x%lx, FP=0x%lx) ===", sp, fp);
+  LOG_INFO("Address          Data            Interpretation");
+  LOG_INFO("----------------------------------------");
+
+  // Dump from SP - 32 to SP + bytes (to see both locals and incoming args)
+  uint64_t start = sp - 32;
+  uint64_t end = sp + bytes;
+
+  for (uint64_t addr = start; addr < end; addr += 8) {
+    if (!memory.is_mapped(addr)) {
+      LOG_INFO("0x%016lx: ?? ?? ?? ?? ?? ?? ?? ??  (unmapped)", addr);
+      continue;
+    }
+
+    uint64_t value = memory.read_qword(addr);
+
+    // Mark special locations
+    std::string marker = "";
+    if (addr == sp)
+      marker = "← SP";
+    else if (addr == fp)
+      marker = "← FP";
+    else if (addr == fp - 8)
+      marker = "← RA";
+    else if (addr == fp - 16)
+      marker = "← saved FP";
+
+    // Check if value might be a code pointer
+    if (value >= 0x11120 && value <= 0x113b0 && (value % 8 == 0)) {
+      marker += " (code?)";
+    }
+
+    LOG_INFO(
+        "0x%016lx: %02x %02x %02x %02x %02x %02x %02x %02x  = 0x%016lx  %s",
+        addr, memory.read_byte(addr), memory.read_byte(addr + 1),
+        memory.read_byte(addr + 2), memory.read_byte(addr + 3),
+        memory.read_byte(addr + 4), memory.read_byte(addr + 5),
+        memory.read_byte(addr + 6), memory.read_byte(addr + 7), value,
+        marker.c_str());
+  }
+}
+
+void Simulator::dump_stack_frame() const {
+  uint64_t fp = regs.get_fp();
+
+  LOG_INFO("=== Stack Frame (FP=0x%lx) ===", fp);
+
+  // Show saved registers
+  if (memory.is_mapped(fp - 8)) {
+    uint64_t ra = memory.read_qword(fp - 8);
+    LOG_INFO("  [FP - 8]  = 0x%016lx  (Return Address)", ra);
+  }
+
+  if (memory.is_mapped(fp - 16)) {
+    uint64_t old_fp = memory.read_qword(fp - 16);
+    LOG_INFO("  [FP - 16] = 0x%016lx  (Saved FP)", old_fp);
+  }
+
+  // Show local variables (negative offsets)
+  for (int offset = -24; offset >= -64; offset -= 8) {
+    if (memory.is_mapped(fp + offset)) {
+      uint64_t val = memory.read_qword(fp + offset);
+      LOG_INFO("  [FP %+d]  = 0x%016lx", offset, val);
+    }
+  }
+
+  // Show incoming arguments (positive offsets)
+  for (int offset = 8; offset <= 64; offset += 8) {
+    if (memory.is_mapped(fp + offset)) {
+      uint64_t val = memory.read_qword(fp + offset);
+      LOG_INFO("  [FP + %d]  = 0x%016lx", offset, val);
+    }
   }
 }
 

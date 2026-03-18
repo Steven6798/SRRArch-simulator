@@ -56,6 +56,9 @@ public:
   // Stop simulation
   void stop() { running = false; }
 
+  void dump_stack(uint64_t bytes = 128) const;
+  void dump_stack_frame() const;
+
   static constexpr uint8_t RA_REG = 4;
   static constexpr uint8_t RV_REG = 3;
 
