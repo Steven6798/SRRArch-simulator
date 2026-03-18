@@ -21,28 +21,38 @@
 
 namespace srrarch {
 
-enum class LogLevel { DBG, INFO, WARNING, ERROR };
+enum class LogLevel {
+  NONE = 0,    // No logging at all (for long simulations)
+  ERROR = 1,   // Only errors
+  WARNING = 2, // Errors + warnings
+  INFO = 3,    // Normal operational info
+  DBG = 4,     // Detailed debugging info
+  TRACE = 5    // Extremely verbose (instruction trace)
+};
 
 class Logger {
 public:
   static Logger &instance();
 
-  void setLevel(LogLevel level);
+  void setLevel(LogLevel level) { m_level = level; }
+  LogLevel getLevel() const { return m_level; }
 
   template <typename... Args>
   void log(LogLevel level, const char *format, Args... args) {
-    if (level >= m_level) {
+    if (static_cast<int>(level) <= static_cast<int>(m_level)) {
       std::lock_guard<std::mutex> lock(m_mutex);
 
-      // Add timestamp
-      time_t now = time(nullptr);
-      char timestamp[20];
-      strftime(timestamp, sizeof(timestamp), "%H:%M:%S", localtime(&now));
-      printf("[%s] ", timestamp);
+      // Add timestamp for non-NONE levels
+      if (m_level != LogLevel::NONE) {
+        time_t now = time(nullptr);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%H:%M:%S", localtime(&now));
+        printf("[%s] ", timestamp);
+      }
 
       printPrefix(level);
 
-// Suppress format string warnings for this specific call
+// Suppress format string warnings
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 #pragma GCC diagnostic ignored "-Wformat-security"
@@ -52,6 +62,11 @@ public:
       printf("\n");
       fflush(stdout);
     }
+  }
+
+  // Quick check to avoid expensive operations when logging is disabled
+  bool shouldLog(LogLevel level) const {
+    return static_cast<int>(level) <= static_cast<int>(m_level);
   }
 
 private:
@@ -64,13 +79,44 @@ private:
 
 } // namespace srrarch
 
-#define LOG_DBG(...)                                                           \
-  srrarch::Logger::instance().log(srrarch::LogLevel::DBG, __VA_ARGS__)
-#define LOG_INFO(...)                                                          \
-  srrarch::Logger::instance().log(srrarch::LogLevel::INFO, __VA_ARGS__)
-#define LOG_WARN(...)                                                          \
-  srrarch::Logger::instance().log(srrarch::LogLevel::WARNING, __VA_ARGS__)
+// Convenience macros
+#define LOG_NONE(...) ((void)0)
 #define LOG_ERROR(...)                                                         \
-  srrarch::Logger::instance().log(srrarch::LogLevel::ERROR, __VA_ARGS__)
+  do {                                                                         \
+    if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::ERROR))       \
+      srrarch::Logger::instance().log(srrarch::LogLevel::ERROR, __VA_ARGS__);  \
+  } while (0)
+
+#define LOG_WARN(...)                                                          \
+  do {                                                                         \
+    if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::WARNING))     \
+      srrarch::Logger::instance().log(srrarch::LogLevel::WARNING,              \
+                                      __VA_ARGS__);                            \
+  } while (0)
+
+#define LOG_INFO(...)                                                          \
+  do {                                                                         \
+    if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::INFO))        \
+      srrarch::Logger::instance().log(srrarch::LogLevel::INFO, __VA_ARGS__);   \
+  } while (0)
+
+#define LOG_DBG(...)                                                           \
+  do {                                                                         \
+    if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::DBG))         \
+      srrarch::Logger::instance().log(srrarch::LogLevel::DBG, __VA_ARGS__);    \
+  } while (0)
+
+#define LOG_TRACE(...)                                                         \
+  do {                                                                         \
+    if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::TRACE))       \
+      srrarch::Logger::instance().log(srrarch::LogLevel::TRACE, __VA_ARGS__);  \
+  } while (0)
+
+// Conditional logging macros
+#define LOG_IF(level, cond, ...)                                               \
+  do {                                                                         \
+    if ((cond))                                                                \
+      LOG_##level(__VA_ARGS__);                                                \
+  } while (0)
 
 #endif // SRRARCH_LOGGER_H

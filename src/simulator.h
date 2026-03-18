@@ -59,6 +59,8 @@ public:
   void dump_stack(uint64_t bytes = 128) const;
   void dump_stack_frame() const;
 
+  void set_max_instructions(uint64_t max) { max_instructions = max; }
+
   static constexpr uint8_t RA_REG = 4;
   static constexpr uint8_t RV_REG = 3;
 
@@ -69,6 +71,7 @@ private:
   uint64_t entry_point = 0;
   bool running = false;
   uint64_t instruction_count = 0;
+  uint64_t max_instructions = 10000;
 
   // Fetch instruction at current PC
   uint64_t fetch();

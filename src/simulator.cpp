@@ -247,12 +247,13 @@ void Simulator::run() {
   LOG_INFO("=== Starting simulation ===");
   LOG_INFO("Entry point: 0x%lx", entry_point);
   LOG_DBG("Initial register state:");
-  regs.dump();
+  if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::DBG))
+    regs.dump();
 
   while (running) {
     step();
-    if (instruction_count > 10000) {
-      LOG_WARN("Reached max instruction count (10000)");
+    if (instruction_count >= max_instructions) {
+      LOG_WARN("Reached max instruction count (%lu)", max_instructions);
       running = false;
     }
   }
@@ -260,7 +261,8 @@ void Simulator::run() {
   LOG_INFO("=== Simulation finished ===");
   LOG_INFO("Executed %lu instructions", instruction_count);
   LOG_DBG("Final register state:");
-  regs.dump();
+  if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::DBG))
+    regs.dump();
 }
 
 // Instruction implementations

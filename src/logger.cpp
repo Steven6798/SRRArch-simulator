@@ -20,22 +20,29 @@ Logger &Logger::instance() {
   return instance;
 }
 
-void Logger::setLevel(LogLevel level) { m_level = level; }
-
 void Logger::printPrefix(LogLevel level) {
+  if (m_level == LogLevel::NONE)
+    return;
+
   const char *prefix;
   switch (level) {
-  case LogLevel::DBG:
-    prefix = "[DBG] ";
-    break;
-  case LogLevel::INFO:
-    prefix = "[INFO]  ";
+  case LogLevel::ERROR:
+    prefix = "[ERROR] ";
     break;
   case LogLevel::WARNING:
     prefix = "[WARN]  ";
     break;
-  case LogLevel::ERROR:
-    prefix = "[ERROR] ";
+  case LogLevel::INFO:
+    prefix = "[INFO]  ";
+    break;
+  case LogLevel::DBG:
+    prefix = "[DBG]   ";
+    break;
+  case LogLevel::TRACE:
+    prefix = "[TRACE] ";
+    break;
+  default:
+    prefix = "";
     break;
   }
   printf("%s", prefix);
