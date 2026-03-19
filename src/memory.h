@@ -4,6 +4,7 @@
  *
  * Provides a flat byte-addressable memory space with
  * read/write operations and segment loading capabilities.
+ * Optimized with fast paths for stack and heap regions.
  *
  * @author SRRArch Simulator Team
  * @version 0.1.0
@@ -14,17 +15,18 @@
 #define MEMORY_H
 
 #include <cstdint>
-#include <map>
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace srrarch {
 
 class Memory {
 public:
-  Memory() = default;
+  Memory();
   ~Memory() = default;
 
-  // Disable copy (can be enabled if needed)
+  // Disable copy
   Memory(const Memory &) = delete;
   Memory &operator=(const Memory &) = delete;
 
@@ -55,7 +57,7 @@ public:
 
   // Query
   bool is_mapped(uint64_t addr) const;
-  size_t total_bytes() const { return data.size(); }
+  size_t total_bytes() const;
 
   // Helper for bounds checking
   bool check_range(uint64_t addr, size_t size) const;
@@ -65,7 +67,15 @@ public:
   void dump() const;
 
 private:
-  std::map<uint64_t, uint8_t> data;
+  static constexpr uint64_t STACK_START = 0x80000000;
+  static constexpr uint64_t STACK_SIZE = 2 * 1024 * 1024; // 2MB stack
+
+  static constexpr uint64_t HEAP_START = 0x00010000;
+  static constexpr uint64_t HEAP_SIZE = 32 * 1024 * 1024; // 32MB heap
+
+  std::unique_ptr<uint8_t[]> stack;
+  std::unique_ptr<uint8_t[]> heap;
+  std::unordered_map<uint64_t, uint8_t> sparse;
 };
 
 } // namespace srrarch

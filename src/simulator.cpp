@@ -247,8 +247,7 @@ void Simulator::run() {
   LOG_INFO("=== Starting simulation ===");
   LOG_INFO("Entry point: 0x%lx", entry_point);
   LOG_DBG("Initial register state:");
-  if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::DBG))
-    regs.dump();
+  //   regs.dump();
 
   while (running) {
     step();
@@ -261,8 +260,7 @@ void Simulator::run() {
   LOG_INFO("=== Simulation finished ===");
   LOG_INFO("Executed %lu instructions", instruction_count);
   LOG_DBG("Final register state:");
-  if (srrarch::Logger::instance().shouldLog(srrarch::LogLevel::DBG))
-    regs.dump();
+  //   regs.dump();
 }
 
 // Instruction implementations
