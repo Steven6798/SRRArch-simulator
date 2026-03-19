@@ -13,8 +13,6 @@
 #include "instruction.h"
 #include "logger.h"
 #include <iomanip>
-#include <iostream>
-#include <sstream>
 
 namespace srrarch {
 

@@ -18,8 +18,6 @@
 #include "instruction.h"
 #include "memory.h"
 #include "registers.h"
-#include <cstdint>
-#include <memory>
 
 namespace srrarch {
 

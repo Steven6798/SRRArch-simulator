@@ -11,7 +11,6 @@
 
 #include "decoder.h"
 #include "instruction.h"
-#include "logger.h"
 
 namespace srrarch {
 

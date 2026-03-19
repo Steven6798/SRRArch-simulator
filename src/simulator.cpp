@@ -17,8 +17,7 @@
 #include "elf_loader.h"
 #include "logger.h"
 #include "memory.h"
-#include <cassert>
-#include <iomanip>
+#include <iostream>
 
 namespace srrarch {
 

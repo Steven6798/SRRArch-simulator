@@ -11,6 +11,7 @@
  */
 
 #include "registers.h"
+#include "logger.h"
 #include <iomanip>
 #include <iostream>
 
@@ -91,8 +92,7 @@ Registers::Registers() { reset(); }
 
 uint64_t Registers::read(uint8_t reg_num) const {
   if (reg_num >= NUM_REGISTERS) {
-    std::cerr << "Warning: Attempt to read invalid register "
-              << static_cast<int>(reg_num) << std::endl;
+    LOG_WARN("Attempt to read invalid register %d", static_cast<int>(reg_num));
     return 0;
   }
   return regs[reg_num];
@@ -100,8 +100,7 @@ uint64_t Registers::read(uint8_t reg_num) const {
 
 void Registers::write(uint8_t reg_num, uint64_t value) {
   if (reg_num >= NUM_REGISTERS) {
-    std::cerr << "Warning: Attempt to write invalid register "
-              << static_cast<int>(reg_num) << std::endl;
+    LOG_WARN("Attempt to write invalid register %d", static_cast<int>(reg_num));
     return;
   }
   regs[reg_num] = value;

@@ -15,10 +15,7 @@
 #define SRRARCH_LOGGER_H
 
 #include <cstdarg>
-#include <cstdio>
 #include <mutex>
-#include <string>
-#include <time.h>
 
 namespace srrarch {
 

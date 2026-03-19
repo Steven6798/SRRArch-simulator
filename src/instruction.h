@@ -29,63 +29,57 @@ public:
   explicit Instruction(const uint8_t *bytes);
 
   // Basic info
-  Opcode opcode() const { return static_cast<Opcode>(raw & 0xFF); }
-  uint64_t raw_value() const { return raw; }
+  inline Opcode opcode() const { return static_cast<Opcode>(raw & 0xFF); }
+  inline uint64_t raw_value() const { return raw; }
 
   // Core register access (5 bits each)
-  uint8_t reg1() const { return (raw >> 8) & 0x1F; }  // bits 8-12
-  uint8_t reg2() const { return (raw >> 13) & 0x1F; } // bits 13-17
-  uint8_t reg3() const { return (raw >> 18) & 0x1F; } // bits 18-22
+  inline uint8_t reg1() const { return (raw >> 8) & 0x1F; }  // bits 8-12
+  inline uint8_t reg2() const { return (raw >> 13) & 0x1F; } // bits 13-17
+  inline uint8_t reg3() const { return (raw >> 18) & 0x1F; } // bits 18-22
 
   // Arithmetic/Logical (3 registers: dest, src1, src2)
-  uint8_t arith_dest() const { return reg1(); }
-  uint8_t arith_src1() const { return reg2(); }
-  uint8_t arith_src2() const { return reg3(); }
+  inline uint8_t arith_dest() const { return reg1(); }
+  inline uint8_t arith_src1() const { return reg2(); }
+  inline uint8_t arith_src2() const { return reg3(); }
 
   // MOV (2 registers: dest, src)
-  uint8_t mov_dest() const { return reg1(); }
-  uint8_t mov_src() const { return reg2(); }
+  inline uint8_t mov_dest() const { return reg1(); }
+  inline uint8_t mov_src() const { return reg2(); }
 
   // For loads/stores
-  uint8_t load_dest() const { return reg1(); }
-  uint8_t load_base() const { return reg2(); }
-  uint8_t store_base() const { return reg1(); }
-  uint8_t store_source() const { return reg2(); }
+  inline uint8_t load_dest() const { return reg1(); }
+  inline uint8_t load_base() const { return reg2(); }
+  inline uint8_t store_base() const { return reg1(); }
+  inline uint8_t store_source() const { return reg2(); }
 
   // RETURN (1 register)
-  uint8_t return_reg() const { return reg1(); }
+  inline uint8_t return_reg() const { return reg1(); }
 
   // GENINT (register + 32-bit immediate)
-  uint8_t genint_reg() const { return reg1(); }
-  uint32_t genint_imm() const { return (raw >> 13) & 0xFFFFFFFF; }
+  inline uint8_t genint_reg() const { return reg1(); }
+  inline uint32_t genint_imm() const { return (raw >> 13) & 0xFFFFFFFF; }
 
   // Comparison (3 registers: dest, src1, src2)
-  uint8_t cmp_dest() const { return reg1(); }
-  uint8_t cmp_src1() const { return reg2(); }
-  uint8_t cmp_src2() const { return reg3(); }
+  inline uint8_t cmp_dest() const { return reg1(); }
+  inline uint8_t cmp_src1() const { return reg2(); }
+  inline uint8_t cmp_src2() const { return reg3(); }
 
   // Shift (3 registers: dest, src, shift_amount)
-  uint8_t shift_dest() const { return reg1(); }
-  uint8_t shift_src() const { return reg2(); }
-  uint8_t shift_amount() const { return reg3(); }
+  inline uint8_t shift_dest() const { return reg1(); }
+  inline uint8_t shift_src() const { return reg2(); }
+  inline uint8_t shift_amount() const { return reg3(); }
 
   // CALL (1 register: target address in register)
-  uint8_t call_target() const { return reg1(); }
+  inline uint8_t call_target() const { return reg1(); }
 
   // For BRCOND - 32-bit absolute target address starting at bit 13
-  uint32_t brcond_target() const {
-    uint32_t imm = (raw >> 13) & 0xFFFFFFFF;
-    return imm;
-  }
+  inline uint32_t brcond_target() const { return (raw >> 13) & 0xFFFFFFFF; }
 
   // For BRCOND - condition register
-  uint8_t brcond_reg() const { return reg1(); }
+  inline uint8_t brcond_reg() const { return reg1(); }
 
   // For BR - 32-bit absolute target address starting at bit 8
-  uint32_t br_target() const {
-    uint32_t imm = (raw >> 8) & 0xFFFFFFFF;
-    return imm;
-  }
+  inline uint32_t br_target() const { return (raw >> 8) & 0xFFFFFFFF; }
 
   // Utility
   size_t register_count() const;

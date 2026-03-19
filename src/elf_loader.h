@@ -14,16 +14,9 @@
 #ifndef ELF_LOADER_H
 #define ELF_LOADER_H
 
-#include <cstdint>
 #include <elf.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include <cstring>
-#include <iostream>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
 namespace srrarch {

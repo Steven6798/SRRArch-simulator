@@ -13,7 +13,10 @@
 
 #include "elf_loader.h"
 #include "logger.h"
-#include <cstdint>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 namespace srrarch {
 
