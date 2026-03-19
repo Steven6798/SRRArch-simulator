@@ -29,14 +29,20 @@ set(BASE_LIBS
 
 # Debug executable
 add_executable(SRRArch-simulator-debug main.cpp)
-target_compile_definitions(SRRArch-simulator-debug PRIVATE DEBUG)
+target_compile_definitions(SRRArch-simulator-debug PRIVATE
+    DEBUG
+    CURRENT_LOG_LEVEL=LOG_LEVEL_INFO
+)
 target_compile_options(SRRArch-simulator-debug PRIVATE -g -O0)
 target_link_libraries(SRRArch-simulator-debug PRIVATE ${BASE_LIBS})
 
 # Release executable
 add_executable(SRRArch-simulator-release main.cpp)
-target_compile_definitions(SRRArch-simulator-release PRIVATE NDEBUG)
-target_compile_options(SRRArch-simulator-release PRIVATE -O3 -DNDEBUG)
+target_compile_definitions(SRRArch-simulator-release PRIVATE
+    NDEBUG
+    CURRENT_LOG_LEVEL=LOG_LEVEL_NONE
+)
+target_compile_options(SRRArch-simulator-release PRIVATE -O3)
 target_link_libraries(SRRArch-simulator-release PRIVATE ${BASE_LIBS})
 
 # Install targets

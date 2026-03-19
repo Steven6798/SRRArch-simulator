@@ -15,15 +15,16 @@
 
 namespace srrarch {
 
-Logger &Logger::instance() {
-  static Logger instance;
-  return instance;
-}
+void Logger::log(LogLevel level, const char *format, ...) {
+  std::lock_guard<std::mutex> lock(m_mutex);
 
-void Logger::printPrefix(LogLevel level) {
-  if (m_level == LogLevel::NONE)
-    return;
+  // Add timestamp
+  time_t now = time(nullptr);
+  char timestamp[20];
+  strftime(timestamp, sizeof(timestamp), "%H:%M:%S", localtime(&now));
+  printf("[%s] ", timestamp);
 
+  // Print level prefix
   const char *prefix;
   switch (level) {
   case LogLevel::ERROR:
@@ -46,6 +47,14 @@ void Logger::printPrefix(LogLevel level) {
     break;
   }
   printf("%s", prefix);
+
+  va_list args;
+  va_start(args, format);
+  vprintf(format, args);
+  va_end(args);
+
+  printf("\n");
+  fflush(stdout);
 }
 
 } // namespace srrarch
