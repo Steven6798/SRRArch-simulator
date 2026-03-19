@@ -584,8 +584,8 @@ void Simulator::exec_printf() {
   }
 
   uint64_t format_addr = memory.read_qword(args_base);
-  uint64_t arg1 = memory.read_qword(args_base + 16);
-  uint64_t arg2 = memory.read_qword(args_base + 24);
+  uint64_t arg1 = memory.read_qword(args_base + 8);
+  uint64_t arg2 = memory.read_qword(args_base + 16);
   std::string format;
 
   // Validate format string address
