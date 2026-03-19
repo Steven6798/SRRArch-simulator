@@ -575,52 +575,24 @@ void Simulator::exec_call(uint8_t target_reg) {
 }
 
 void Simulator::exec_printf() {
-  uint64_t fp = regs.get_fp();
-  uint64_t sp = regs.get_sp();
-
-  uint64_t format_addr;
-  uint64_t arg1 = 0;
-  uint64_t arg2 = 0;
-  std::string format;
-
-  // Determine where arguments are based on call context
-  if (fp == 0x80000000) {
-    // Called from _start - arguments are on the stack relative to SP
-    LOG_DBG("  -> printf: called from _start (SP=0x%lx)", sp);
-
-    // In _start, the string address is at [SP]
-    if (!memory.is_mapped(sp)) {
-      LOG_ERROR("  -> printf error: SP 0x%lx not mapped!", sp);
-      return;
-    }
-    format_addr = memory.read_qword(sp);
-
-    // Additional arguments would be at SP+8 and SP+16
-    if (memory.is_mapped(sp + 8)) {
-      arg1 = memory.read_qword(sp + 8);
-    }
-    if (memory.is_mapped(sp + 16)) {
-      arg2 = memory.read_qword(sp + 16);
-    }
-  } else {
-    // Normal function call - arguments are at FP + 16
-    LOG_DBG("  -> printf: called from function (FP=0x%lx)", fp);
-
-    uint64_t args_base = fp + 16;
-    if (!memory.is_mapped(args_base)) {
-      LOG_ERROR("  -> printf error: args_base 0x%lx not mapped!", args_base);
-      return;
-    }
-
-    format_addr = memory.read_qword(args_base);
-    arg1 = memory.read_qword(args_base + 8);
-    arg2 = memory.read_qword(args_base + 16);
+  // All printf calls use the same argument access pattern
+  uint64_t args_base = regs.get_sp();
+  if (!memory.is_mapped(args_base)) {
+    LOG_ERROR("  -> printf error: args_base 0x%lx not mapped!", args_base);
+    running = false;
+    return;
   }
+
+  uint64_t format_addr = memory.read_qword(args_base);
+  uint64_t arg1 = memory.read_qword(args_base + 16);
+  uint64_t arg2 = memory.read_qword(args_base + 24);
+  std::string format;
 
   // Validate format string address
   if (!memory.is_mapped(format_addr)) {
     LOG_ERROR("  -> printf error: format string address 0x%lx not mapped!",
               format_addr);
+    running = false;
     return;
   }
 
@@ -661,7 +633,13 @@ void Simulator::exec_printf() {
         else if (arg_idx == 1)
           current_arg = arg2;
 
-        // Format based on specifier
+        // Handle 'l' modifier by just skipping it
+        if (spec == 'l' && i + 1 < format.length()) {
+          spec = format[i + 1]; // Get the actual specifier
+          i++;                  // Skip the 'l'
+        }
+
+        // Format based on specifier (all integers are 64-bit)
         char buffer[32];
         switch (spec) {
         case 'd':
@@ -677,7 +655,8 @@ void Simulator::exec_printf() {
           break;
         case 'x':
         case 'X':
-          snprintf(buffer, sizeof(buffer), "0x%lx", current_arg);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%lx" : "%lX",
+                   current_arg);
           output += buffer;
           break;
         case 'c':
@@ -701,7 +680,7 @@ void Simulator::exec_printf() {
           }
           break;
         default:
-          // Unknown specifier - just print it raw
+          // Unknown specifier
           snprintf(buffer, sizeof(buffer), "<?>");
           output += buffer;
           break;
