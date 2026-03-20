@@ -19,7 +19,7 @@ namespace srrarch {
 
 // Custom opcodes as enum class for type safety
 enum class Opcode : uint8_t {
-  // Arithmetic/Logical (0x00-0x0F)
+  // Arithmetic/Logical (0x00-0x11)
   NOP = 0x00,
   ADD = 0x01,
   SUB = 0x02,
@@ -36,31 +36,33 @@ enum class Opcode : uint8_t {
   CMPNE = 0x0d,
   CMPLT = 0x0e,
   CMPGT = 0x0f,
+  CMPULT = 0x10,
+  CMPUGT = 0x11,
 
-  // Stores (0x10-0x13)
-  STOREB = 0x10,
-  STOREH = 0x11,
-  STOREW = 0x12,
-  STORE = 0x13,
+  // Stores (0x12-0x15)
+  STOREB = 0x12,
+  STOREH = 0x13,
+  STOREW = 0x14,
+  STORE = 0x15,
 
-  // Loads (0x14-0x1A)
-  LOADBZ = 0x14,
-  LOADBS = 0x15,
-  LOADHZ = 0x16,
-  LOADHS = 0x17,
-  LOADWZ = 0x18,
-  LOADWS = 0x19,
-  LOAD = 0x1a,
+  // Loads (0x16-0x1c)
+  LOADBZ = 0x16,
+  LOADBS = 0x17,
+  LOADHZ = 0x18,
+  LOADHS = 0x19,
+  LOADWZ = 0x1a,
+  LOADWS = 0x1b,
+  LOAD = 0x1c,
 
-  // Control flow (0x1B-0x1E)
-  RETURN = 0x1b,
-  CALL = 0x1c,
-  BRCOND = 0x1d,
-  BR = 0x1e,
+  // Control flow (0x1d-0x20)
+  RETURN = 0x1d,
+  CALL = 0x1e,
+  BRCOND = 0x1f,
+  BR = 0x20,
 
-  // Immediate and move (0x1F-0x20)
-  GENINT = 0x1f,
-  MOV = 0x20,
+  // Immediate and move (0x21-0x22)
+  GENINT = 0x21,
+  MOV = 0x22,
 
   COUNT
 };
@@ -69,7 +71,7 @@ enum class Opcode : uint8_t {
 constexpr const char *OPCODE_NAMES[] = {
     // Arithmetic/Logical
     "NOP", "ADD", "SUB", "MUL", "SDIV", "UDIV", "AND", "OR", "XOR", "SHL",
-    "SRA", "SRL", "CMPEQ", "CMPNE", "CMPLT", "CMPGT",
+    "SRA", "SRL", "CMPEQ", "CMPNE", "CMPLT", "CMPGT", "CMPULT", "CMPUGT",
     // Stores
     "STOREB", "STOREH", "STOREW", "STORE",
     // Loads

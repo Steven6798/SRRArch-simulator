@@ -105,6 +105,8 @@ private:
   void exec_cmpne(uint8_t dest, uint8_t src1, uint8_t src2);
   void exec_cmplt(uint8_t dest, uint8_t src1, uint8_t src2);
   void exec_cmpgt(uint8_t dest, uint8_t src1, uint8_t src2);
+  void exec_cmpugt(uint8_t dest, uint8_t src1, uint8_t src2);
+  void exec_cmpult(uint8_t dest, uint8_t src1, uint8_t src2);
 
   // Memory operations
   void exec_storeb(uint8_t base, uint8_t src);

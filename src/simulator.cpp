@@ -172,6 +172,12 @@ void Simulator::execute(const Instruction &inst) {
   case Opcode::CMPGT:
     exec_cmpgt(inst.cmp_dest(), inst.cmp_src1(), inst.cmp_src2());
     break;
+  case Opcode::CMPULT:
+    exec_cmpult(inst.cmp_dest(), inst.cmp_src1(), inst.cmp_src2());
+    break;
+  case Opcode::CMPUGT:
+    exec_cmpugt(inst.cmp_dest(), inst.cmp_src1(), inst.cmp_src2());
+    break;
 
   // Memory
   case Opcode::STOREB:
@@ -438,6 +444,24 @@ void Simulator::exec_cmpgt(uint8_t dest, uint8_t src1, uint8_t src2) {
   int64_t b = static_cast<int64_t>(regs.read(src2));
   uint64_t result = (a > b) ? 1 : 0;
   LOG_INFO("  -> CMPGT: R%u = (R%u > R%u) ? 1 : 0 (%ld > %ld = %lu)", dest,
+           src1, src2, a, b, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_cmpult(uint8_t dest, uint8_t src1, uint8_t src2) {
+  uint64_t a = static_cast<uint64_t>(regs.read(src1));
+  uint64_t b = static_cast<uint64_t>(regs.read(src2));
+  uint64_t result = (a < b) ? 1 : 0;
+  LOG_INFO("  -> CMPULT: R%u = (R%u < R%u) ? 1 : 0 (%lu < %lu = %lu)", dest,
+           src1, src2, a, b, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_cmpugt(uint8_t dest, uint8_t src1, uint8_t src2) {
+  uint64_t a = static_cast<uint64_t>(regs.read(src1));
+  uint64_t b = static_cast<uint64_t>(regs.read(src2));
+  uint64_t result = (a > b) ? 1 : 0;
+  LOG_INFO("  -> CMPUGT: R%u = (R%u > R%u) ? 1 : 0 (%lu > %lu = %lu)", dest,
            src1, src2, a, b, result);
   regs.write(dest, result);
 }

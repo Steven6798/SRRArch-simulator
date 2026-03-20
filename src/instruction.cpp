@@ -70,6 +70,8 @@ size_t Instruction::register_count() const {
   case Opcode::CMPNE:
   case Opcode::CMPLT:
   case Opcode::CMPGT:
+  case Opcode::CMPULT:
+  case Opcode::CMPUGT:
     return 3;
 
   default:
@@ -147,6 +149,8 @@ std::string Instruction::to_string() const {
   case Opcode::CMPNE:
   case Opcode::CMPLT:
   case Opcode::CMPGT:
+  case Opcode::CMPULT:
+  case Opcode::CMPUGT:
     ss << " R" << static_cast<int>(cmp_dest()) << ", R"
        << static_cast<int>(cmp_src1()) << ", R" << static_cast<int>(cmp_src2());
     break;
