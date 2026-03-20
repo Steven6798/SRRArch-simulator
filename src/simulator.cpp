@@ -642,72 +642,148 @@ void Simulator::exec_printf() {
   for (size_t i = 0; i < format.length(); i++) {
     if (format[i] == '%' && i + 1 < format.length()) {
       char spec = format[i + 1];
-      i++; // Skip the specifier
+      i++; // Skip the initial '%'
+
+      // Check for length modifiers
+      // 0 = default (int), 1 = h (short), 2 = hh (char), 3 = l (long)
+      int length_modifier = 0;
+
+      if (spec == 'h') {
+        // Check for 'hh' (two h's)
+        if (i + 1 < format.length() && format[i + 1] == 'h') {
+          length_modifier = 2;
+          spec = format[i + 2];
+          i += 2; // Skip both 'h' characters
+        } else {
+          length_modifier = 1;
+          spec = format[i + 1];
+          i++; // Skip the 'h'
+        }
+      } else if (spec == 'l') {
+        length_modifier = 3;
+        spec = format[i + 1];
+        i++; // Skip the 'l'
+      }
 
       if (spec == '%') {
         output += '%'; // Escaped percent
-      } else {
-        // Get the appropriate argument
-        uint64_t current_arg = 0;
-        if (arg_idx == 0)
-          current_arg = arg1;
-        else if (arg_idx == 1)
-          current_arg = arg2;
+        continue;
+      }
 
-        // Handle 'l' modifier by just skipping it
-        if (spec == 'l' && i + 1 < format.length()) {
-          spec = format[i + 1]; // Get the actual specifier
-          i++;                  // Skip the 'l'
+      // Get the appropriate argument
+      uint64_t current_arg = 0;
+      if (arg_idx == 0)
+        current_arg = arg1;
+      else if (arg_idx == 1)
+        current_arg = arg2;
+
+      // Format based on specifier and length modifier
+      char buffer[32];
+
+      switch (spec) {
+      case 'd':
+      case 'i': {
+        // Signed integer conversion with length modifiers
+        switch (length_modifier) {
+        case 2: { // hh - char
+          signed char val = static_cast<signed char>(current_arg & 0xFF);
+          snprintf(buffer, sizeof(buffer), "%d", static_cast<int>(val));
+          break;
         }
-
-        // Format based on specifier (all integers are 64-bit)
-        char buffer[32];
-        switch (spec) {
-        case 'd':
-        case 'i':
+        case 1: { // h - short
+          short val = static_cast<short>(current_arg & 0xFFFF);
+          snprintf(buffer, sizeof(buffer), "%d", static_cast<int>(val));
+          break;
+        }
+        default: { // default - int/long
           snprintf(buffer, sizeof(buffer), "%ld",
                    static_cast<long>(current_arg));
-          output += buffer;
-          break;
-        case 'u':
-          snprintf(buffer, sizeof(buffer), "%lu",
-                   static_cast<unsigned long>(current_arg));
-          output += buffer;
-          break;
-        case 'x':
-        case 'X':
-          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%lx" : "%lX",
-                   current_arg);
-          output += buffer;
-          break;
-        case 'c':
-          output += static_cast<char>(current_arg & 0xFF);
-          break;
-        case 's':
-          // String argument - address of another string
-          {
-            uint64_t str_addr = current_arg;
-            if (memory.is_mapped(str_addr)) {
-              std::string str;
-              uint64_t s_addr = str_addr;
-              uint8_t s_byte;
-              while ((s_byte = memory.read_byte(s_addr++)) != 0) {
-                str += static_cast<char>(s_byte);
-              }
-              output += str;
-            } else {
-              output += "(null)";
-            }
-          }
-          break;
-        default:
-          // Unknown specifier
-          snprintf(buffer, sizeof(buffer), "<?>");
-          output += buffer;
           break;
         }
-        arg_idx++;
+        }
+        output += buffer;
+        break;
       }
+      case 'u': {
+        // Unsigned integer conversion with length modifiers
+        switch (length_modifier) {
+        case 2: { // hh - unsigned char
+          unsigned char val = static_cast<unsigned char>(current_arg & 0xFF);
+          snprintf(buffer, sizeof(buffer), "%u",
+                   static_cast<unsigned int>(val));
+          break;
+        }
+        case 1: { // h - unsigned short
+          unsigned short val =
+              static_cast<unsigned short>(current_arg & 0xFFFF);
+          snprintf(buffer, sizeof(buffer), "%u",
+                   static_cast<unsigned int>(val));
+          break;
+        }
+        default: { // default - unsigned long
+          snprintf(buffer, sizeof(buffer), "%lu",
+                   static_cast<unsigned long>(current_arg));
+          break;
+        }
+        }
+        output += buffer;
+        break;
+      }
+      case 'x':
+      case 'X': {
+        // Hexadecimal conversion with length modifiers
+        const char *fmt = (spec == 'x') ? "%lx" : "%lX";
+        uint64_t val = current_arg;
+
+        switch (length_modifier) {
+        case 2: { // hh - unsigned char
+          unsigned char cval = static_cast<unsigned char>(current_arg & 0xFF);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%02x" : "%02X",
+                   cval);
+          break;
+        }
+        case 1: { // h - unsigned short
+          unsigned short sval =
+              static_cast<unsigned short>(current_arg & 0xFFFF);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%04x" : "%04X",
+                   sval);
+          break;
+        }
+        default: { // default - unsigned long
+          snprintf(buffer, sizeof(buffer), fmt, val);
+          break;
+        }
+        }
+        output += buffer;
+        break;
+      }
+      case 'c':
+        output += static_cast<char>(current_arg & 0xFF);
+        break;
+      case 's':
+        // String argument - address of another string
+        {
+          uint64_t str_addr = current_arg;
+          if (memory.is_mapped(str_addr)) {
+            std::string str;
+            uint64_t s_addr = str_addr;
+            uint8_t s_byte;
+            while ((s_byte = memory.read_byte(s_addr++)) != 0) {
+              str += static_cast<char>(s_byte);
+            }
+            output += str;
+          } else {
+            output += "(null)";
+          }
+        }
+        break;
+      default:
+        // Unknown specifier
+        snprintf(buffer, sizeof(buffer), "<?>");
+        output += buffer;
+        break;
+      }
+      arg_idx++;
     } else {
       output += format[i];
     }
