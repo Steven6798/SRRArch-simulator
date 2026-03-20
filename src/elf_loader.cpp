@@ -207,9 +207,20 @@ LoadResult ElfLoader::parse_sections() {
         (shdr->sh_name != 0) ? std::string(shstrtab + shdr->sh_name) : "";
     info.addr = shdr->sh_addr;
     info.size = shdr->sh_size;
+    info.data = nullptr;
+    info.is_bss = false;
+
+    // BSS sections have SHT_NOBITS type - no data in file
+    if (shdr->sh_type == SHT_NOBITS) {
+      // For BSS, we need to zero-initialize memory, not load from file
+      info.is_bss = true;
+      LOG_DBG("Found BSS section: %s at 0x%lx (size: 0x%lx)", info.name.c_str(),
+              info.addr, info.size);
+    }
 
     // Ensure the section data lies within the file
-    if (shdr->sh_offset + shdr->sh_size <= static_cast<uint64_t>(st.st_size)) {
+    else if (shdr->sh_offset + shdr->sh_size <=
+             static_cast<uint64_t>(st.st_size)) {
       info.data = file_map + shdr->sh_offset;
     } else {
       LOG_WARN("Section %s data out of file bounds", info.name.c_str());

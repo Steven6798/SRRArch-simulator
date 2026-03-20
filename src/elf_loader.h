@@ -41,6 +41,7 @@ struct SectionInfo {
   std::string name;
   uint64_t addr;
   uint64_t size;
+  bool is_bss;
   const uint8_t *data; // Pointer to section content in mapped file
 };
 

@@ -57,10 +57,17 @@ LoadResult Simulator::load_elf(const char *filename) {
   // Load data sections into memory
   const auto &data_sections = loader->get_data_sections();
   for (const auto &sec : data_sections) {
-    LOG_INFO("Loading data section %s at 0x%lx (size: 0x%lx bytes)",
-             sec.name.c_str(), sec.addr, sec.size);
-    memory.load_segment(sec.addr, sec.data, sec.size);
-    total_bytes += sec.size;
+    if (sec.is_bss) {
+      // For BSS, zero-initialize the memory
+      LOG_INFO("Zero-initializing BSS section %s at 0x%lx (size: 0x%lx bytes)",
+               sec.name.c_str(), sec.addr, sec.size);
+      std::vector<uint8_t> zeros(sec.size, 0);
+      memory.load_segment(sec.addr, zeros.data(), sec.size);
+    } else {
+      LOG_INFO("Loading data section %s at 0x%lx (size: 0x%lx bytes)",
+               sec.name.c_str(), sec.addr, sec.size);
+      memory.load_segment(sec.addr, sec.data, sec.size);
+    }
   }
 
   LOG_INFO("Loaded %zu bytes into memory", total_bytes);
