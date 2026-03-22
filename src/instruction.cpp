@@ -135,13 +135,33 @@ std::string Instruction::to_string() const {
        << static_cast<int>(arith_src2());
     break;
 
+  // Arithmetic/Logical register-immediate format
+  case Opcode::ADDI:
+  case Opcode::SUBI:
+  case Opcode::ANDI:
+  case Opcode::ORI:
+  case Opcode::XORI:
+    ss << " R" << static_cast<int>(arith_dest()) << ", R"
+       << static_cast<int>(arith_src1()) << ", 0x" << std::hex << arith_imm()
+       << std::dec;
+    break;
+
   // Shifts (3-register format)
   case Opcode::SHL:
   case Opcode::SRA:
   case Opcode::SRL:
     ss << " R" << static_cast<int>(shift_dest()) << ", R"
-       << static_cast<int>(shift_src()) << ", R"
-       << static_cast<int>(shift_amount());
+       << static_cast<int>(shift_src1()) << ", R"
+       << static_cast<int>(shift_src2());
+    break;
+
+  // Shifts register-immediate format
+  case Opcode::SHLI:
+  case Opcode::SRAI:
+  case Opcode::SRLI:
+    ss << " R" << static_cast<int>(shift_dest()) << ", R"
+       << static_cast<int>(shift_src1()) << ", 0x" << std::hex << shift_imm()
+       << std::dec;
     break;
 
   // Comparisons (3-register format)

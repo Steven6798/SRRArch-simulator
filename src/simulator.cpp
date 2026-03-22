@@ -127,7 +127,7 @@ void Simulator::execute(const Instruction &inst) {
     exec_mov(inst.mov_dest(), inst.mov_src());
     break;
 
-  // Arithmetic
+  // Arithmetic register-register
   case Opcode::ADD:
     exec_add(inst.arith_dest(), inst.arith_src1(), inst.arith_src2());
     break;
@@ -144,7 +144,15 @@ void Simulator::execute(const Instruction &inst) {
     exec_udiv(inst.arith_dest(), inst.arith_src1(), inst.arith_src2());
     break;
 
-  // Logical
+  // Arithmetic register-immediate
+  case Opcode::ADDI:
+    exec_addi(inst.arith_dest(), inst.arith_src1(), inst.arith_imm());
+    break;
+  case Opcode::SUBI:
+    exec_subi(inst.arith_dest(), inst.arith_src1(), inst.arith_imm());
+    break;
+
+  // Logical register-register
   case Opcode::AND:
     exec_and(inst.arith_dest(), inst.arith_src1(), inst.arith_src2());
     break;
@@ -155,15 +163,37 @@ void Simulator::execute(const Instruction &inst) {
     exec_xor(inst.arith_dest(), inst.arith_src1(), inst.arith_src2());
     break;
 
-  // Shifts
+  // Logical register-immediate
+  case Opcode::ANDI:
+    exec_andi(inst.arith_dest(), inst.arith_src1(), inst.arith_imm());
+    break;
+  case Opcode::ORI:
+    exec_ori(inst.arith_dest(), inst.arith_src1(), inst.arith_imm());
+    break;
+  case Opcode::XORI:
+    exec_xori(inst.arith_dest(), inst.arith_src1(), inst.arith_imm());
+    break;
+
+  // Shifts register-register
   case Opcode::SHL:
-    exec_shl(inst.shift_dest(), inst.shift_src(), inst.shift_amount());
+    exec_shl(inst.shift_dest(), inst.shift_src1(), inst.shift_src2());
     break;
   case Opcode::SRA:
-    exec_sra(inst.shift_dest(), inst.shift_src(), inst.shift_amount());
+    exec_sra(inst.shift_dest(), inst.shift_src1(), inst.shift_src2());
     break;
   case Opcode::SRL:
-    exec_srl(inst.shift_dest(), inst.shift_src(), inst.shift_amount());
+    exec_srl(inst.shift_dest(), inst.shift_src1(), inst.shift_src2());
+    break;
+
+  // Shifts register-immediate
+  case Opcode::SHLI:
+    exec_shli(inst.shift_dest(), inst.shift_src1(), inst.shift_imm());
+    break;
+  case Opcode::SRAI:
+    exec_srai(inst.shift_dest(), inst.shift_src1(), inst.shift_imm());
+    break;
+  case Opcode::SRLI:
+    exec_srli(inst.shift_dest(), inst.shift_src1(), inst.shift_imm());
     break;
 
   // Comparisons
@@ -362,6 +392,22 @@ void Simulator::exec_udiv(uint8_t dest, uint8_t src1, uint8_t src2) {
   regs.write(dest, result);
 }
 
+void Simulator::exec_addi(uint8_t dest, uint8_t src, int32_t imm) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a + static_cast<uint64_t>(imm);
+  LOG_INFO("  -> ADDI: R%u = R%u + %d (0x%lx + %d = 0x%lx)", dest, src, imm, a,
+           imm, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_subi(uint8_t dest, uint8_t src, int32_t imm) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a - static_cast<uint64_t>(imm);
+  LOG_INFO("  -> SUBI: R%u = R%u - %d (0x%lx - %d = 0x%lx)", dest, src, imm, a,
+           imm, result);
+  regs.write(dest, result);
+}
+
 // Logical
 void Simulator::exec_and(uint8_t dest, uint8_t src1, uint8_t src2) {
   uint64_t a = regs.read(src1);
@@ -390,6 +436,30 @@ void Simulator::exec_xor(uint8_t dest, uint8_t src1, uint8_t src2) {
   regs.write(dest, result);
 }
 
+void Simulator::exec_andi(uint8_t dest, uint8_t src, int32_t imm) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a & static_cast<uint64_t>(imm);
+  LOG_INFO("  -> ANDI: R%u = R%u & %d (0x%lx & %d = 0x%lx)", dest, src, imm, a,
+           imm, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_ori(uint8_t dest, uint8_t src, int32_t imm) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a | static_cast<uint64_t>(imm);
+  LOG_INFO("  -> ORI: R%u = R%u | %d (0x%lx | %d = 0x%lx)", dest, src, imm, a,
+           imm, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_xori(uint8_t dest, uint8_t src, int32_t imm) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a ^ static_cast<uint64_t>(imm);
+  LOG_INFO("  -> XORI: R%u = R%u ^ %d (0x%lx ^ %d = 0x%lx)", dest, src, imm, a,
+           imm, result);
+  regs.write(dest, result);
+}
+
 // Shifts
 void Simulator::exec_shl(uint8_t dest, uint8_t src, uint8_t amount) {
   uint64_t val = regs.read(src);
@@ -415,6 +485,30 @@ void Simulator::exec_srl(uint8_t dest, uint8_t src, uint8_t amount) {
   uint64_t result = val >> shift; // Logical shift
   LOG_INFO("  -> SRL: R%u = R%u >> R%u (0x%lx >> %lu = 0x%lx)", dest, src,
            amount, val, shift, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_shli(uint8_t dest, uint8_t src, int32_t shift) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a << shift;
+  LOG_INFO("  -> SHLI: R%u = R%u << %u (0x%lx << %u = 0x%lx)", dest, src, shift,
+           a, shift, result);
+  regs.write(dest, result);
+}
+
+void Simulator::exec_srai(uint8_t dest, uint8_t src, int32_t shift) {
+  int64_t a = static_cast<int64_t>(regs.read(src));
+  int64_t result = a >> shift;
+  LOG_INFO("  -> SRAI: R%u = R%u >> %u (%ld >> %u = %ld)", dest, src, shift, a,
+           shift, result);
+  regs.write(dest, static_cast<uint64_t>(result));
+}
+
+void Simulator::exec_srli(uint8_t dest, uint8_t src, int32_t shift) {
+  uint64_t a = regs.read(src);
+  uint64_t result = a >> shift;
+  LOG_INFO("  -> SRLI: R%u = R%u >> %u (0x%lx >> %u = 0x%lx)", dest, src, shift,
+           a, shift, result);
   regs.write(dest, result);
 }
 

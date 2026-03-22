@@ -39,30 +39,40 @@ enum class Opcode : uint8_t {
   CMPULT = 0x10,
   CMPUGT = 0x11,
 
-  // Stores (0x12-0x15)
-  STOREB = 0x12,
-  STOREH = 0x13,
-  STOREW = 0x14,
-  STORE = 0x15,
+  // Arithmetic/Logical immediates (0x12-0x19)
+  ADDI = 0x12,
+  SUBI = 0x13,
+  ANDI = 0x14,
+  ORI = 0x15,
+  XORI = 0x16,
+  SHLI = 0x17,
+  SRAI = 0x18,
+  SRLI = 0x19,
 
-  // Loads (0x16-0x1c)
-  LOADBZ = 0x16,
-  LOADBS = 0x17,
-  LOADHZ = 0x18,
-  LOADHS = 0x19,
-  LOADWZ = 0x1a,
-  LOADWS = 0x1b,
-  LOAD = 0x1c,
+  // Stores (0x1a-0x1d)
+  STOREB = 0x1a,
+  STOREH = 0x1b,
+  STOREW = 0x1c,
+  STORE = 0x1d,
 
-  // Control flow (0x1d-0x20)
-  RETURN = 0x1d,
-  CALL = 0x1e,
-  BRCOND = 0x1f,
-  BR = 0x20,
+  // Loads (0x1e-0x24)
+  LOADBZ = 0x1e,
+  LOADBS = 0x1f,
+  LOADHZ = 0x20,
+  LOADHS = 0x21,
+  LOADWZ = 0x22,
+  LOADWS = 0x23,
+  LOAD = 0x24,
 
-  // Immediate and move (0x21-0x22)
-  GENINT = 0x21,
-  MOV = 0x22,
+  // Control flow (0x25-0x28)
+  RETURN = 0x25,
+  CALL = 0x26,
+  BRCOND = 0x27,
+  BR = 0x28,
+
+  // Immediate and move (0x29-0x2a)
+  GENINT = 0x29,
+  MOV = 0x2a,
 
   COUNT
 };
@@ -72,6 +82,8 @@ constexpr const char *OPCODE_NAMES[] = {
     // Arithmetic/Logical
     "NOP", "ADD", "SUB", "MUL", "SDIV", "UDIV", "AND", "OR", "XOR", "SHL",
     "SRA", "SRL", "CMPEQ", "CMPNE", "CMPLT", "CMPGT", "CMPULT", "CMPUGT",
+    // Arithmetic/Logical immediates
+    "ADDI", "SUBI", "ANDI", "ORI", "XORI", "SHLI", "SRAI", "SRLI",
     // Stores
     "STOREB", "STOREH", "STOREW", "STORE",
     // Loads

@@ -37,12 +37,21 @@ public:
   inline uint8_t reg2() const { return (raw >> 13) & 0x1F; } // bits 13-17
   inline uint8_t reg3() const { return (raw >> 18) & 0x1F; } // bits 18-22
 
-  // Arithmetic/Logical (3 registers: dest, src1, src2)
+  // For immediate ALU operations (12-bit immediate at bit 18)
+  int32_t alu_imm() const {
+    uint32_t imm12 = (raw >> 18) & 0xFFF;
+
+    // Shift left 20, then arithmetic shift right 20 to sign-extend
+    return static_cast<int32_t>(imm12 << 20) >> 20;
+  }
+
+  // Arithmetic/Logical
   inline uint8_t arith_dest() const { return reg1(); }
   inline uint8_t arith_src1() const { return reg2(); }
   inline uint8_t arith_src2() const { return reg3(); }
+  inline int32_t arith_imm() const { return alu_imm(); }
 
-  // MOV (2 registers: dest, src)
+  // MOV
   inline uint8_t mov_dest() const { return reg1(); }
   inline uint8_t mov_src() const { return reg2(); }
 
@@ -52,22 +61,23 @@ public:
   inline uint8_t store_base() const { return reg1(); }
   inline uint8_t store_source() const { return reg2(); }
 
-  // RETURN (1 register)
+  // RETURN
   inline uint8_t return_reg() const { return reg1(); }
 
-  // GENINT (register + 32-bit immediate)
+  // GENINT
   inline uint8_t genint_reg() const { return reg1(); }
   inline uint32_t genint_imm() const { return (raw >> 13) & 0xFFFFFFFF; }
 
-  // Comparison (3 registers: dest, src1, src2)
+  // Comparison
   inline uint8_t cmp_dest() const { return reg1(); }
   inline uint8_t cmp_src1() const { return reg2(); }
   inline uint8_t cmp_src2() const { return reg3(); }
 
-  // Shift (3 registers: dest, src, shift_amount)
+  // Shift
   inline uint8_t shift_dest() const { return reg1(); }
-  inline uint8_t shift_src() const { return reg2(); }
-  inline uint8_t shift_amount() const { return reg3(); }
+  inline uint8_t shift_src1() const { return reg2(); }
+  inline uint8_t shift_src2() const { return reg3(); }
+  inline int32_t shift_imm() const { return alu_imm(); }
 
   // CALL (1 register: target address in register)
   inline uint8_t call_target() const { return reg1(); }
