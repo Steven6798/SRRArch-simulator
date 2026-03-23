@@ -84,6 +84,20 @@ LoadResult Simulator::load_elf(const char *filename) {
 uint64_t Simulator::fetch() {
   uint64_t pc = regs.get_pc();
 
+  // Validate PC is within mapped executable section
+  if (!memory.is_mapped(pc)) {
+    LOG_ERROR("Invalid PC: 0x%lx not mapped in memory!", pc);
+    running = false;
+    return 0;
+  }
+
+  // Optional: Check alignment (if instructions are 8-byte aligned)
+  if (pc % 8 != 0) {
+    LOG_ERROR("Invalid PC: 0x%lx is not 8-byte aligned!", pc);
+    running = false;
+    return 0;
+  }
+
   // Use Memory class to read instruction
   uint64_t instruction = memory.read_qword(pc);
   LOG_DBG("Fetched instruction at 0x%lx: 0x%016lx", pc, instruction);
