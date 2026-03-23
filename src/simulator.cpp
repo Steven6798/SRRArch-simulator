@@ -82,7 +82,7 @@ LoadResult Simulator::load_elf(const char *filename) {
 }
 
 uint64_t Simulator::fetch() {
-  uint64_t pc = regs.get_pc();
+  const uint64_t pc = regs.get_pc();
 
   // Validate PC is within mapped executable section
   if (!memory.is_mapped(pc)) {
@@ -99,7 +99,7 @@ uint64_t Simulator::fetch() {
   }
 
   // Use Memory class to read instruction
-  uint64_t instruction = memory.read_qword(pc);
+  const uint64_t instruction = memory.read_qword(pc);
   LOG_DBG("Fetched instruction at 0x%lx: 0x%016lx", pc, instruction);
 
   // Advance PC
@@ -109,7 +109,7 @@ uint64_t Simulator::fetch() {
 
 void Simulator::execute(const Instruction &inst) {
   // Validate opcode before execution
-  uint8_t op = static_cast<uint8_t>(inst.opcode());
+  const uint8_t op = static_cast<uint8_t>(inst.opcode());
   if (op >= static_cast<uint8_t>(Opcode::COUNT)) {
     LOG_ERROR("Invalid opcode 0x%02x at PC=0x%lx", op, regs.get_pc() - 8);
     LOG_ERROR("  Raw instruction: 0x%016lx", inst.raw_value());
@@ -120,9 +120,11 @@ void Simulator::execute(const Instruction &inst) {
 
   LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
 
-  // Decode and print using Instruction class
+// Decode and print using Instruction class
+#if CURRENT_LOG_LEVEL >= LOG_LEVEL_NONE
   inst.print_bytes();
   inst.print();
+#endif
 
   switch (inst.opcode()) {
   case Opcode::NOP:
@@ -326,11 +328,11 @@ void Simulator::run() {
 void Simulator::exec_nop() { LOG_DBG("  -> NOP"); }
 
 void Simulator::exec_return() {
-  uint64_t return_addr = regs.read(RA_REG);  // R4
-  uint64_t return_value = regs.read(RV_REG); // R3
+  const uint64_t return_addr = regs.get_ra();
+  const uint64_t return_value = regs.get_retval();
 
   if (return_addr == 0) {
-    // Returning from _start (or any entry with R4=0) - program done
+    // Returning from _start (or any entry with RA=0) - program done
     regs.set_retval(return_value);
     LOG_INFO("  -> RETURN: program finished with value 0x%lx", return_value);
     running = false;
@@ -348,78 +350,78 @@ void Simulator::exec_genint(uint8_t reg, uint32_t imm) {
 }
 
 void Simulator::exec_mov(uint8_t dest, uint8_t src) {
-  uint64_t val = regs.read(src);
+  const uint64_t val = regs.read(src);
   LOG_INFO("  -> MOV: R%u = R%u (0x%lx)", dest, src, val);
   regs.write(dest, val);
 }
 
 // Arithmetic
 void Simulator::exec_add(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = a + b;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = a + b;
   LOG_INFO("  -> ADD: R%u = R%u + R%u (0x%lx + 0x%lx = 0x%lx)", dest, src1,
            src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_sub(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = a - b;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = a - b;
   LOG_INFO("  -> SUB: R%u = R%u - R%u (0x%lx - 0x%lx = 0x%lx)", dest, src1,
            src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_mul(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = a * b;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = a * b;
   LOG_INFO("  -> MUL: R%u = R%u * R%u (0x%lx * 0x%lx = 0x%lx)", dest, src1,
            src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_sdiv(uint8_t dest, uint8_t src1, uint8_t src2) {
-  int64_t a = static_cast<int64_t>(regs.read(src1));
-  int64_t b = static_cast<int64_t>(regs.read(src2));
+  const int64_t a = static_cast<int64_t>(regs.read(src1));
+  const int64_t b = static_cast<int64_t>(regs.read(src2));
   if (b == 0) {
     LOG_ERROR("  -> SDIV: division by zero!");
     running = false;
     return;
   }
-  int64_t result = a / b;
+  const int64_t result = a / b;
   LOG_INFO("  -> SDIV: R%u = R%u / R%u (%ld / %ld = %ld)", dest, src1, src2, a,
            b, result);
   regs.write(dest, static_cast<uint64_t>(result));
 }
 
 void Simulator::exec_udiv(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
   if (b == 0) {
     LOG_ERROR("  -> UDIV: division by zero!");
     running = false;
     return;
   }
-  uint64_t result = a / b;
+  const uint64_t result = a / b;
   LOG_INFO("  -> UDIV: R%u = R%u / R%u (0x%lx / 0x%lx = 0x%lx)", dest, src1,
            src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_addi(uint8_t dest, uint8_t src, int32_t imm) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a + static_cast<uint64_t>(imm);
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a + static_cast<uint64_t>(imm);
   LOG_INFO("  -> ADDI: R%u = R%u + %d (0x%lx + %d = 0x%lx)", dest, src, imm, a,
            imm, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_subi(uint8_t dest, uint8_t src, int32_t imm) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a - static_cast<uint64_t>(imm);
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a - static_cast<uint64_t>(imm);
   LOG_INFO("  -> SUBI: R%u = R%u - %d (0x%lx - %d = 0x%lx)", dest, src, imm, a,
            imm, result);
   regs.write(dest, result);
@@ -427,51 +429,51 @@ void Simulator::exec_subi(uint8_t dest, uint8_t src, int32_t imm) {
 
 // Logical
 void Simulator::exec_and(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = a & b;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = a & b;
   LOG_INFO("  -> AND: R%u = R%u & R%u (0x%lx & 0x%lx = 0x%lx)", dest, src1,
            src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_or(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = a | b;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = a | b;
   LOG_INFO("  -> OR: R%u = R%u | R%u (0x%lx | 0x%lx = 0x%lx)", dest, src1, src2,
            a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_xor(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = a ^ b;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = a ^ b;
   LOG_INFO("  -> XOR: R%u = R%u ^ R%u (0x%lx ^ 0x%lx = 0x%lx)", dest, src1,
            src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_andi(uint8_t dest, uint8_t src, int32_t imm) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a & static_cast<uint64_t>(imm);
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a & static_cast<uint64_t>(imm);
   LOG_INFO("  -> ANDI: R%u = R%u & %d (0x%lx & %d = 0x%lx)", dest, src, imm, a,
            imm, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_ori(uint8_t dest, uint8_t src, int32_t imm) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a | static_cast<uint64_t>(imm);
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a | static_cast<uint64_t>(imm);
   LOG_INFO("  -> ORI: R%u = R%u | %d (0x%lx | %d = 0x%lx)", dest, src, imm, a,
            imm, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_xori(uint8_t dest, uint8_t src, int32_t imm) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a ^ static_cast<uint64_t>(imm);
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a ^ static_cast<uint64_t>(imm);
   LOG_INFO("  -> XORI: R%u = R%u ^ %d (0x%lx ^ %d = 0x%lx)", dest, src, imm, a,
            imm, result);
   regs.write(dest, result);
@@ -479,51 +481,51 @@ void Simulator::exec_xori(uint8_t dest, uint8_t src, int32_t imm) {
 
 // Shifts
 void Simulator::exec_shl(uint8_t dest, uint8_t src, uint8_t amount) {
-  uint64_t val = regs.read(src);
-  uint64_t shift = regs.read(amount) & 0x3F; // Only low 6 bits used
-  uint64_t result = val << shift;
+  const uint64_t val = regs.read(src);
+  const uint64_t shift = regs.read(amount) & 0x3F; // Only low 6 bits used
+  const uint64_t result = val << shift;
   LOG_INFO("  -> SHL: R%u = R%u << R%u (0x%lx << %lu = 0x%lx)", dest, src,
            amount, val, shift, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_sra(uint8_t dest, uint8_t src, uint8_t amount) {
-  int64_t val = static_cast<int64_t>(regs.read(src));
-  uint64_t shift = regs.read(amount) & 0x3F;
-  int64_t result = val >> shift; // Arithmetic shift
+  const int64_t val = static_cast<int64_t>(regs.read(src));
+  const uint64_t shift = regs.read(amount) & 0x3F;
+  const int64_t result = val >> shift; // Arithmetic shift
   LOG_INFO("  -> SRA: R%u = R%u >> R%u (%ld >> %lu = %ld)", dest, src, amount,
            val, shift, result);
   regs.write(dest, static_cast<uint64_t>(result));
 }
 
 void Simulator::exec_srl(uint8_t dest, uint8_t src, uint8_t amount) {
-  uint64_t val = regs.read(src);
-  uint64_t shift = regs.read(amount) & 0x3F;
-  uint64_t result = val >> shift; // Logical shift
+  const uint64_t val = regs.read(src);
+  const uint64_t shift = regs.read(amount) & 0x3F;
+  const uint64_t result = val >> shift; // Logical shift
   LOG_INFO("  -> SRL: R%u = R%u >> R%u (0x%lx >> %lu = 0x%lx)", dest, src,
            amount, val, shift, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_shli(uint8_t dest, uint8_t src, int32_t shift) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a << shift;
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a << shift;
   LOG_INFO("  -> SHLI: R%u = R%u << %u (0x%lx << %u = 0x%lx)", dest, src, shift,
            a, shift, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_srai(uint8_t dest, uint8_t src, int32_t shift) {
-  int64_t a = static_cast<int64_t>(regs.read(src));
-  int64_t result = a >> shift;
+  const int64_t a = static_cast<int64_t>(regs.read(src));
+  const int64_t result = a >> shift;
   LOG_INFO("  -> SRAI: R%u = R%u >> %u (%ld >> %u = %ld)", dest, src, shift, a,
            shift, result);
   regs.write(dest, static_cast<uint64_t>(result));
 }
 
 void Simulator::exec_srli(uint8_t dest, uint8_t src, int32_t shift) {
-  uint64_t a = regs.read(src);
-  uint64_t result = a >> shift;
+  const uint64_t a = regs.read(src);
+  const uint64_t result = a >> shift;
   LOG_INFO("  -> SRLI: R%u = R%u >> %u (0x%lx >> %u = 0x%lx)", dest, src, shift,
            a, shift, result);
   regs.write(dest, result);
@@ -531,54 +533,54 @@ void Simulator::exec_srli(uint8_t dest, uint8_t src, int32_t shift) {
 
 // Comparisons
 void Simulator::exec_cmpeq(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = (a == b) ? 1 : 0;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = (a == b) ? 1 : 0;
   LOG_INFO("  -> CMPEQ: R%u = (R%u == R%u) ? 1 : 0 (0x%lx == 0x%lx = %lu)",
            dest, src1, src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_cmpne(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = regs.read(src1);
-  uint64_t b = regs.read(src2);
-  uint64_t result = (a != b) ? 1 : 0;
+  const uint64_t a = regs.read(src1);
+  const uint64_t b = regs.read(src2);
+  const uint64_t result = (a != b) ? 1 : 0;
   LOG_INFO("  -> CMPNE: R%u = (R%u != R%u) ? 1 : 0 (0x%lx != 0x%lx = %lu)",
            dest, src1, src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_cmplt(uint8_t dest, uint8_t src1, uint8_t src2) {
-  int64_t a = static_cast<int64_t>(regs.read(src1));
-  int64_t b = static_cast<int64_t>(regs.read(src2));
-  uint64_t result = (a < b) ? 1 : 0;
+  const int64_t a = static_cast<int64_t>(regs.read(src1));
+  const int64_t b = static_cast<int64_t>(regs.read(src2));
+  const uint64_t result = (a < b) ? 1 : 0;
   LOG_INFO("  -> CMPLT: R%u = (R%u < R%u) ? 1 : 0 (%ld < %ld = %lu)", dest,
            src1, src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_cmpgt(uint8_t dest, uint8_t src1, uint8_t src2) {
-  int64_t a = static_cast<int64_t>(regs.read(src1));
-  int64_t b = static_cast<int64_t>(regs.read(src2));
-  uint64_t result = (a > b) ? 1 : 0;
+  const int64_t a = static_cast<int64_t>(regs.read(src1));
+  const int64_t b = static_cast<int64_t>(regs.read(src2));
+  const uint64_t result = (a > b) ? 1 : 0;
   LOG_INFO("  -> CMPGT: R%u = (R%u > R%u) ? 1 : 0 (%ld > %ld = %lu)", dest,
            src1, src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_cmpult(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = static_cast<uint64_t>(regs.read(src1));
-  uint64_t b = static_cast<uint64_t>(regs.read(src2));
-  uint64_t result = (a < b) ? 1 : 0;
+  const uint64_t a = static_cast<uint64_t>(regs.read(src1));
+  const uint64_t b = static_cast<uint64_t>(regs.read(src2));
+  const uint64_t result = (a < b) ? 1 : 0;
   LOG_INFO("  -> CMPULT: R%u = (R%u < R%u) ? 1 : 0 (%lu < %lu = %lu)", dest,
            src1, src2, a, b, result);
   regs.write(dest, result);
 }
 
 void Simulator::exec_cmpugt(uint8_t dest, uint8_t src1, uint8_t src2) {
-  uint64_t a = static_cast<uint64_t>(regs.read(src1));
-  uint64_t b = static_cast<uint64_t>(regs.read(src2));
-  uint64_t result = (a > b) ? 1 : 0;
+  const uint64_t a = static_cast<uint64_t>(regs.read(src1));
+  const uint64_t b = static_cast<uint64_t>(regs.read(src2));
+  const uint64_t result = (a > b) ? 1 : 0;
   LOG_INFO("  -> CMPUGT: R%u = (R%u > R%u) ? 1 : 0 (%lu > %lu = %lu)", dest,
            src1, src2, a, b, result);
   regs.write(dest, result);
@@ -586,8 +588,8 @@ void Simulator::exec_cmpugt(uint8_t dest, uint8_t src1, uint8_t src2) {
 
 // Memory operations
 void Simulator::exec_storeb(uint8_t src, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint64_t value = regs.read(src);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint64_t value = regs.read(src);
 
   memory.write_byte(addr, value & 0xFF);
   LOG_INFO("  -> STOREB: [R%u + %d] = R%u (0x%lx = 0x%02llx)", base, offset,
@@ -595,8 +597,8 @@ void Simulator::exec_storeb(uint8_t src, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_storeh(uint8_t src, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint64_t value = regs.read(src);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint64_t value = regs.read(src);
 
   memory.write_word(addr, value & 0xFFFF);
   LOG_INFO("  -> STOREH: [R%u + %d] = R%u (0x%lx = 0x%04llx)", base, offset,
@@ -604,8 +606,8 @@ void Simulator::exec_storeh(uint8_t src, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_storew(uint8_t src, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint64_t value = regs.read(src);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint64_t value = regs.read(src);
 
   memory.write_dword(addr, value & 0xFFFFFFFF);
   LOG_INFO("  -> STOREW: [R%u + %d] = R%u (0x%lx = 0x%08llx)", base, offset,
@@ -613,8 +615,8 @@ void Simulator::exec_storew(uint8_t src, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_store(uint8_t src, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint64_t value = regs.read(src);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint64_t value = regs.read(src);
 
   memory.write_qword(addr, value);
   LOG_INFO("  -> STORE: [R%u + %d] = R%u (0x%lx = 0x%lx)", base, offset, src,
@@ -622,8 +624,8 @@ void Simulator::exec_store(uint8_t src, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_loadbz(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint8_t value = memory.read_byte(addr);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint8_t value = memory.read_byte(addr);
 
   regs.write(dest, value);
   LOG_INFO("  -> LOADBZ: R%u = [R%u + %d] (0x%lx = 0x%02llx)", dest, base,
@@ -631,8 +633,8 @@ void Simulator::exec_loadbz(uint8_t dest, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_loadbs(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  int8_t value = static_cast<int8_t>(memory.read_byte(addr));
+  const uint64_t addr = regs.read(base) + offset;
+  const int8_t value = static_cast<int8_t>(memory.read_byte(addr));
 
   regs.write(dest, static_cast<uint64_t>(value));
   LOG_INFO("  -> LOADBS: R%u = [R%u + %d] (0x%lx = 0x%02llx -> 0x%016llx)",
@@ -641,8 +643,8 @@ void Simulator::exec_loadbs(uint8_t dest, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_loadhz(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint16_t value = memory.read_word(addr);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint16_t value = memory.read_word(addr);
 
   regs.write(dest, value);
   LOG_INFO("  -> LOADHZ: R%u = [R%u + %d] (0x%lx = 0x%04llx)", dest, base,
@@ -650,8 +652,8 @@ void Simulator::exec_loadhz(uint8_t dest, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_loadhs(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  int16_t value = static_cast<int16_t>(memory.read_word(addr));
+  const uint64_t addr = regs.read(base) + offset;
+  const int16_t value = static_cast<int16_t>(memory.read_word(addr));
 
   regs.write(dest, static_cast<uint64_t>(value));
   LOG_INFO("  -> LOADHS: R%u = [R%u + %d] (0x%lx = 0x%04llx -> 0x%016llx)",
@@ -660,8 +662,8 @@ void Simulator::exec_loadhs(uint8_t dest, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_loadwz(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint32_t value = memory.read_dword(addr);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint32_t value = memory.read_dword(addr);
 
   regs.write(dest, value);
   LOG_INFO("  -> LOADWZ: R%u = [R%u + %d] (0x%lx = 0x%08llx)", dest, base,
@@ -669,8 +671,8 @@ void Simulator::exec_loadwz(uint8_t dest, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_loadws(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  int32_t value = static_cast<int32_t>(memory.read_dword(addr));
+  const uint64_t addr = regs.read(base) + offset;
+  const int32_t value = static_cast<int32_t>(memory.read_dword(addr));
 
   regs.write(dest, static_cast<uint64_t>(value));
   LOG_INFO("  -> LOADWS: R%u = [R%u + %d] (0x%lx = 0x%08llx -> 0x%016llx)",
@@ -679,8 +681,8 @@ void Simulator::exec_loadws(uint8_t dest, uint8_t base, int32_t offset) {
 }
 
 void Simulator::exec_load(uint8_t dest, uint8_t base, int32_t offset) {
-  uint64_t addr = regs.read(base) + offset;
-  uint64_t value = memory.read_qword(addr);
+  const uint64_t addr = regs.read(base) + offset;
+  const uint64_t value = memory.read_qword(addr);
 
   regs.write(dest, value);
   LOG_INFO("  -> LOAD: R%u = [R%u + %d] (0x%lx = 0x%lx)", dest, base, offset,
@@ -689,8 +691,8 @@ void Simulator::exec_load(uint8_t dest, uint8_t base, int32_t offset) {
 
 void Simulator::exec_call(uint32_t target_addr) {
   // dump_stack_frame();
-  uint64_t target = target_addr;
-  uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
+  const uint64_t target = target_addr;
+  const uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
 
   // Simple check for printf
   if (loader && loader->is_printf_undefined() && target == 0) {
@@ -708,8 +710,8 @@ void Simulator::exec_call(uint32_t target_addr) {
     return;
   }
 
-  // Save return address to link register (R4)
-  regs.write(RA_REG, return_addr);
+  // Save return address to return address register
+  regs.set_ra(return_addr);
 
   // Jump to target
   regs.set_pc(target);
@@ -720,8 +722,8 @@ void Simulator::exec_call(uint32_t target_addr) {
 
 void Simulator::exec_callreg(uint8_t target_reg) {
   // dump_stack_frame();
-  uint64_t target = regs.read(target_reg);
-  uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
+  const uint64_t target = regs.read(target_reg);
+  const uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
 
   // Simple check for printf
   if (loader && loader->is_printf_undefined() && target == 0) {
@@ -739,8 +741,8 @@ void Simulator::exec_callreg(uint8_t target_reg) {
     return;
   }
 
-  // Save return address to link register (R4)
-  regs.write(RA_REG, return_addr);
+  // Save return address to return address register
+  regs.set_ra(return_addr);
 
   // Jump to target
   regs.set_pc(target);
@@ -751,16 +753,16 @@ void Simulator::exec_callreg(uint8_t target_reg) {
 
 void Simulator::exec_printf() {
   // All printf calls use the same argument access pattern
-  uint64_t args_base = regs.get_sp();
+  const uint64_t args_base = regs.get_sp();
   if (!memory.is_mapped(args_base)) {
     LOG_ERROR("  -> printf error: args_base 0x%lx not mapped!", args_base);
     running = false;
     return;
   }
 
-  uint64_t format_addr = memory.read_qword(args_base);
-  uint64_t arg1 = memory.read_qword(args_base + 8);
-  uint64_t arg2 = memory.read_qword(args_base + 16);
+  const uint64_t format_addr = memory.read_qword(args_base);
+  const uint64_t arg1 = memory.read_qword(args_base + 8);
+  const uint64_t arg2 = memory.read_qword(args_base + 16);
   std::string format;
 
   // Validate format string address
@@ -887,7 +889,7 @@ void Simulator::exec_printf() {
       case 'X': {
         // Hexadecimal conversion with length modifiers
         const char *fmt = (spec == 'x') ? "%lx" : "%lX";
-        uint64_t val = current_arg;
+        const uint64_t val = current_arg;
 
         switch (length_modifier) {
         case 2: { // hh - unsigned char
@@ -917,7 +919,7 @@ void Simulator::exec_printf() {
       case 's':
         // String argument - address of another string
         {
-          uint64_t str_addr = current_arg;
+          const uint64_t str_addr = current_arg;
           if (memory.is_mapped(str_addr)) {
             std::string str;
             uint64_t s_addr = str_addr;
@@ -955,7 +957,7 @@ void Simulator::exec_printf() {
 }
 
 void Simulator::exec_br(uint32_t target_addr) {
-  uint64_t current_pc = regs.get_pc() - 8;
+  const uint64_t current_pc = regs.get_pc() - 8;
 
   // Set PC to absolute target
   regs.set_pc(target_addr);
@@ -964,7 +966,7 @@ void Simulator::exec_br(uint32_t target_addr) {
 }
 
 void Simulator::exec_brcond(uint8_t cond_reg, uint32_t target_addr) {
-  uint64_t cond_value = regs.read(cond_reg);
+  const uint64_t cond_value = regs.read(cond_reg);
 
   if (cond_value != 0) {
     // Condition true - branch to absolute address
@@ -979,16 +981,16 @@ void Simulator::exec_brcond(uint8_t cond_reg, uint32_t target_addr) {
 }
 
 void Simulator::dump_stack(uint64_t bytes) const {
-  uint64_t sp = regs.get_sp();
-  uint64_t fp = regs.get_fp();
+  const uint64_t sp = regs.get_sp();
+  const uint64_t fp = regs.get_fp();
 
   LOG_INFO("=== Stack Dump (SP=0x%lx, FP=0x%lx) ===", sp, fp);
   LOG_INFO("Address          Data            Interpretation");
   LOG_INFO("----------------------------------------");
 
   // Dump from SP - 32 to SP + bytes (to see both locals and incoming args)
-  uint64_t start = sp - 32;
-  uint64_t end = sp + bytes;
+  const uint64_t start = sp - 32;
+  const uint64_t end = sp + bytes;
 
   for (uint64_t addr = start; addr < end; addr += 8) {
     if (!memory.is_mapped(addr)) {
@@ -1025,25 +1027,25 @@ void Simulator::dump_stack(uint64_t bytes) const {
 }
 
 void Simulator::dump_stack_frame() const {
-  uint64_t fp = regs.get_fp();
+  const uint64_t fp = regs.get_fp();
 
   LOG_INFO("=== Stack Frame (FP=0x%lx) ===", fp);
 
   // Show saved registers
   if (memory.is_mapped(fp - 8)) {
-    uint64_t ra = memory.read_qword(fp - 8);
+    const uint64_t ra = memory.read_qword(fp - 8);
     LOG_INFO("  [FP - 8]  = 0x%016lx  (Return Address)", ra);
   }
 
   if (memory.is_mapped(fp - 16)) {
-    uint64_t old_fp = memory.read_qword(fp - 16);
+    const uint64_t old_fp = memory.read_qword(fp - 16);
     LOG_INFO("  [FP - 16] = 0x%016lx  (Saved FP)", old_fp);
   }
 
   // Show local variables (negative offsets)
   for (int offset = -24; offset >= -64; offset -= 8) {
     if (memory.is_mapped(fp + offset)) {
-      uint64_t val = memory.read_qword(fp + offset);
+      const uint64_t val = memory.read_qword(fp + offset);
       LOG_INFO("  [FP %+d]  = 0x%016lx", offset, val);
     }
   }
@@ -1051,7 +1053,7 @@ void Simulator::dump_stack_frame() const {
   // Show incoming arguments (positive offsets)
   for (int offset = 8; offset <= 64; offset += 8) {
     if (memory.is_mapped(fp + offset)) {
-      uint64_t val = memory.read_qword(fp + offset);
+      const uint64_t val = memory.read_qword(fp + offset);
       LOG_INFO("  [FP + %d]  = 0x%016lx", offset, val);
     }
   }

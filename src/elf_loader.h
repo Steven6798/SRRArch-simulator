@@ -53,15 +53,19 @@ public:
   LoadResult load(const char *filename);
   void unload();
   void *get_entry_point() const;
-  const std::vector<SectionInfo> &get_executable_sections() const {
+  __attribute__((always_inline)) inline const std::vector<SectionInfo> &
+  get_executable_sections() const {
     return exec_sections;
   }
-  const std::vector<SectionInfo> &get_data_sections() const {
+  __attribute__((always_inline)) inline const std::vector<SectionInfo> &
+  get_data_sections() const {
     return data_sections;
   }
 
   // just check if printf is undefined
-  bool is_printf_undefined() const { return printf_undefined; }
+  __attribute__((always_inline)) inline bool is_printf_undefined() const {
+    return printf_undefined;
+  }
 
 private:
   int fd;            // File descriptor (may be closed after mmap)

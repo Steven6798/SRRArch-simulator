@@ -104,9 +104,6 @@ constexpr const char *opcode_to_string(Opcode op) {
   return OPCODE_NAMES[static_cast<size_t>(op)];
 }
 
-// Decode one 8-byte instruction from an executable section
-void decode_instruction(const uint8_t *inst);
-
 } // namespace srrarch
 
 #endif // DECODER_H

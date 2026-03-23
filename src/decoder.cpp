@@ -12,12 +12,4 @@
 #include "decoder.h"
 #include "instruction.h"
 
-namespace srrarch {
-
-void decode_instruction(const uint8_t *inst) {
-  Instruction instruction(inst);
-  instruction.print_bytes();
-  instruction.print();
-}
-
-} // namespace srrarch
+namespace srrarch {} // namespace srrarch

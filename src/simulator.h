@@ -45,22 +45,10 @@ public:
   // Single step execution (for debugging)
   void step();
 
-  // Get register file (for inspection)
-  const Registers &get_registers() const { return regs; }
-
-  // Check if simulation should stop
-  bool is_running() const { return running; }
-
-  // Stop simulation
-  void stop() { running = false; }
-
   void dump_stack(uint64_t bytes = 128) const;
   void dump_stack_frame() const;
 
   void set_max_instructions(uint64_t max) { max_instructions = max; }
-
-  static constexpr uint8_t RA_REG = 4;
-  static constexpr uint8_t RV_REG = 3;
 
 private:
   Registers regs;

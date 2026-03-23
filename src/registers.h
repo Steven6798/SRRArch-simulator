@@ -3,8 +3,8 @@
  * @brief Register file implementation for SRRArch
  *
  * Provides 32 64-bit general purpose registers with special-purpose
- * naming: PC (R0), SP (R1), FP (R2), RV (R3), ARG0-ARG3 (R4-R7),
- * and general purpose R8-R31.
+ * naming: PC (R0), SP (R1), FP (R2), RV (R3), RA (R4), ARG0-ARG3 (R5-R8),
+ * and general purpose R9-R31.
  *
  * @author SRRArch Simulator Team
  * @version 0.1.0
@@ -26,15 +26,15 @@ enum Register : uint8_t {
   R1_SP = 1, // Stack Pointer
   R2_FP = 2, // Frame Pointer
   R3_RV = 3, // Return Value
+  R4_RA = 4, // Return Address
 
   // Argument registers
-  R4_ARG0 = 4,
-  R5_ARG1 = 5,
-  R6_ARG2 = 6,
-  R7_ARG3 = 7,
+  R5_ARG0 = 5,
+  R6_ARG1 = 6,
+  R7_ARG2 = 7,
+  R8_ARG3 = 8,
 
   // General purpose registers
-  R8 = 8,
   R9 = 9,
   R10 = 10,
   R11 = 11,
@@ -76,17 +76,40 @@ public:
   void write(uint8_t reg_num, uint64_t value);
 
   // Special getters/setters for named registers (for convenience)
-  uint64_t get_pc() const { return regs[R0_PC]; }
-  void set_pc(uint64_t value) { regs[R0_PC] = value; }
+  __attribute__((always_inline)) inline uint64_t get_pc() const {
+    return regs[R0_PC];
+  }
+  __attribute__((always_inline)) inline void set_pc(uint64_t value) {
+    regs[R0_PC] = value;
+  }
 
-  uint64_t get_sp() const { return regs[R1_SP]; }
-  void set_sp(uint64_t value) { regs[R1_SP] = value; }
+  __attribute__((always_inline)) inline uint64_t get_sp() const {
+    return regs[R1_SP];
+  }
+  __attribute__((always_inline)) inline void set_sp(uint64_t value) {
+    regs[R1_SP] = value;
+  }
 
-  uint64_t get_fp() const { return regs[R2_FP]; }
-  void set_fp(uint64_t value) { regs[R2_FP] = value; }
+  __attribute__((always_inline)) inline uint64_t get_fp() const {
+    return regs[R2_FP];
+  }
+  __attribute__((always_inline)) inline void set_fp(uint64_t value) {
+    regs[R2_FP] = value;
+  }
 
-  uint64_t get_retval() const { return regs[R3_RV]; }
-  void set_retval(uint64_t value) { regs[R3_RV] = value; }
+  __attribute__((always_inline)) inline uint64_t get_retval() const {
+    return regs[R3_RV];
+  }
+  __attribute__((always_inline)) inline void set_retval(uint64_t value) {
+    regs[R3_RV] = value;
+  }
+
+  __attribute__((always_inline)) inline uint64_t get_ra() const {
+    return regs[R4_RA];
+  }
+  __attribute__((always_inline)) inline void set_ra(uint64_t value) {
+    regs[R4_RA] = value;
+  }
 
   // Debug: print all register values
   void dump() const;

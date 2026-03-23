@@ -27,16 +27,14 @@ std::string register_to_string(uint8_t reg_num) {
     return "FP";
   case R3_RV:
     return "RV";
-  case R4_ARG0:
+  case R5_ARG0:
     return "ARG0";
-  case R5_ARG1:
+  case R6_ARG1:
     return "ARG1";
-  case R6_ARG2:
+  case R7_ARG2:
     return "ARG2";
-  case R7_ARG3:
+  case R8_ARG3:
     return "ARG3";
-  case R8:
-    return "R8";
   case R9:
     return "R9";
   case R10:
