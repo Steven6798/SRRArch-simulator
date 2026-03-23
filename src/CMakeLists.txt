@@ -42,7 +42,8 @@ target_compile_definitions(SRRArch-simulator-release PRIVATE
     NDEBUG
     CURRENT_LOG_LEVEL=LOG_LEVEL_NONE
 )
-target_compile_options(SRRArch-simulator-release PRIVATE -O3)
+target_compile_options(SRRArch-simulator-release PRIVATE -O3 -flto)
+target_link_options(SRRArch-simulator-release PRIVATE -flto)
 target_link_libraries(SRRArch-simulator-release PRIVATE ${BASE_LIBS})
 
 # Install targets
