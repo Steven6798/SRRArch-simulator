@@ -106,19 +106,24 @@ std::string Instruction::to_string() const {
   case Opcode::LOADWS:
   case Opcode::LOAD:
     ss << " R" << static_cast<int>(load_dest()) << ", R"
-       << static_cast<int>(load_base());
+       << static_cast<int>(mem_base()) << ", 0x" << std::hex << mem_offset()
+       << std::dec;
     break;
 
   case Opcode::STOREB:
   case Opcode::STOREH:
   case Opcode::STOREW:
   case Opcode::STORE:
-    ss << " R" << static_cast<int>(store_base()) << ", R"
-       << static_cast<int>(store_source());
+    ss << " R" << static_cast<int>(store_source()) << ", R"
+       << static_cast<int>(mem_base()) << ", 0x" << std::hex << mem_offset()
+       << std::dec;
     break;
 
   case Opcode::CALL:
-    ss << " R" << static_cast<int>(call_target());
+    ss << " 0x" << std::hex << call_target() << std::dec;
+    break;
+  case Opcode::CALLREG:
+    ss << " R" << static_cast<int>(call_source());
     break;
 
   // Arithmetic/Logical (3-register format)

@@ -123,20 +123,21 @@ private:
   void exec_cmpult(uint8_t dest, uint8_t src1, uint8_t src2);
 
   // Memory operations
-  void exec_storeb(uint8_t base, uint8_t src);
-  void exec_storeh(uint8_t base, uint8_t src);
-  void exec_storew(uint8_t base, uint8_t src);
-  void exec_store(uint8_t base, uint8_t src);
+  void exec_storeb(uint8_t src, uint8_t base, int32_t offset);
+  void exec_storeh(uint8_t src, uint8_t base, int32_t offset);
+  void exec_storew(uint8_t src, uint8_t base, int32_t offset);
+  void exec_store(uint8_t src, uint8_t base, int32_t offset);
 
-  void exec_loadbz(uint8_t dest, uint8_t base);
-  void exec_loadbs(uint8_t dest, uint8_t base);
-  void exec_loadhz(uint8_t dest, uint8_t base);
-  void exec_loadhs(uint8_t dest, uint8_t base);
-  void exec_loadwz(uint8_t dest, uint8_t base);
-  void exec_loadws(uint8_t dest, uint8_t base);
-  void exec_load(uint8_t dest, uint8_t base);
+  void exec_loadbz(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_loadbs(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_loadhz(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_loadhs(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_loadwz(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_loadws(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_load(uint8_t dest, uint8_t base, int32_t offset);
 
-  void exec_call(uint8_t target_reg);
+  void exec_call(uint32_t target_addr);
+  void exec_callreg(uint8_t target_reg);
 
   // Special case to handle print until it can be compiled natively.
   void exec_printf();

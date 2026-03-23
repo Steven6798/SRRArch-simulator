@@ -64,15 +64,16 @@ enum class Opcode : uint8_t {
   LOADWS = 0x23,
   LOAD = 0x24,
 
-  // Control flow (0x25-0x28)
+  // Control flow (0x25-0x29)
   RETURN = 0x25,
   CALL = 0x26,
-  BRCOND = 0x27,
-  BR = 0x28,
+  CALLREG = 0x27,
+  BRCOND = 0x28,
+  BR = 0x29,
 
-  // Immediate and move (0x29-0x2a)
-  GENINT = 0x29,
-  MOV = 0x2a,
+  // Immediate and move (0x2a-0x2b)
+  GENINT = 0x2a,
+  MOV = 0x2b,
 
   COUNT
 };
@@ -89,7 +90,7 @@ constexpr const char *OPCODE_NAMES[] = {
     // Loads
     "LOADBZ", "LOADBS", "LOADHZ", "LOADHS", "LOADWZ", "LOADWS", "LOAD",
     // Control flow
-    "RETURN", "CALL", "BRCOND", "BR",
+    "RETURN", "CALL", "CALLREG", "BRCOND", "BR",
     // Immediate and move
     "GENINT", "MOV"};
 

@@ -57,9 +57,13 @@ public:
 
   // For loads/stores
   inline uint8_t load_dest() const { return reg1(); }
-  inline uint8_t load_base() const { return reg2(); }
-  inline uint8_t store_base() const { return reg1(); }
-  inline uint8_t store_source() const { return reg2(); }
+  inline uint8_t store_source() const { return reg1(); }
+  inline uint8_t mem_base() const { return reg2(); }
+  inline int32_t mem_offset() const {
+    // 12-bit signed immediate at bits 18-29
+    uint32_t imm12 = (raw >> 18) & 0xFFF;
+    return static_cast<int32_t>(imm12 << 20) >> 20;
+  }
 
   // RETURN
   inline uint8_t return_reg() const { return reg1(); }
@@ -79,8 +83,11 @@ public:
   inline uint8_t shift_src2() const { return reg3(); }
   inline int32_t shift_imm() const { return alu_imm(); }
 
-  // CALL (1 register: target address in register)
-  inline uint8_t call_target() const { return reg1(); }
+  // CALLREG (1 register: target address in register)
+  inline uint8_t call_source() const { return reg1(); }
+
+  // For CALL - 32-bit absolute target address starting at bit 8
+  inline uint32_t call_target() const { return (raw >> 8) & 0xFFFFFFFF; }
 
   // For BRCOND - 32-bit absolute target address starting at bit 13
   inline uint32_t brcond_target() const { return (raw >> 13) & 0xFFFFFFFF; }

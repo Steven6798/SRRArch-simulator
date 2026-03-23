@@ -218,42 +218,45 @@ void Simulator::execute(const Instruction &inst) {
 
   // Memory
   case Opcode::STOREB:
-    exec_storeb(inst.store_base(), inst.store_source());
+    exec_storeb(inst.store_source(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::STOREH:
-    exec_storeh(inst.store_base(), inst.store_source());
+    exec_storeh(inst.store_source(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::STOREW:
-    exec_storew(inst.store_base(), inst.store_source());
+    exec_storew(inst.store_source(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::STORE:
-    exec_store(inst.store_base(), inst.store_source());
+    exec_store(inst.store_source(), inst.mem_base(), inst.mem_offset());
     break;
 
   case Opcode::LOADBZ:
-    exec_loadbz(inst.load_dest(), inst.load_base());
+    exec_loadbz(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::LOADBS:
-    exec_loadbs(inst.load_dest(), inst.load_base());
+    exec_loadbs(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::LOADHZ:
-    exec_loadhz(inst.load_dest(), inst.load_base());
+    exec_loadhz(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::LOADHS:
-    exec_loadhs(inst.load_dest(), inst.load_base());
+    exec_loadhs(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::LOADWZ:
-    exec_loadwz(inst.load_dest(), inst.load_base());
+    exec_loadwz(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::LOADWS:
-    exec_loadws(inst.load_dest(), inst.load_base());
+    exec_loadws(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
   case Opcode::LOAD:
-    exec_load(inst.load_dest(), inst.load_base());
+    exec_load(inst.load_dest(), inst.mem_base(), inst.mem_offset());
     break;
 
   case Opcode::CALL:
     exec_call(inst.call_target());
+    break;
+  case Opcode::CALLREG:
+    exec_callreg(inst.call_source());
     break;
 
   case Opcode::BR:
@@ -568,104 +571,140 @@ void Simulator::exec_cmpugt(uint8_t dest, uint8_t src1, uint8_t src2) {
 }
 
 // Memory operations
-void Simulator::exec_storeb(uint8_t base, uint8_t src) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_storeb(uint8_t src, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint64_t value = regs.read(src);
 
   memory.write_byte(addr, value & 0xFF);
-  LOG_INFO("  -> STOREB: [R%u] = R%u (0x%lx = 0x%02llx)", base, src, addr,
-           value & 0xFF);
+  LOG_INFO("  -> STOREB: [R%u + %d] = R%u (0x%lx = 0x%02llx)", base, offset,
+           src, addr, value & 0xFF);
 }
 
-void Simulator::exec_storeh(uint8_t base, uint8_t src) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_storeh(uint8_t src, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint64_t value = regs.read(src);
 
   memory.write_word(addr, value & 0xFFFF);
-  LOG_INFO("  -> STOREH: [R%u] = R%u (0x%lx = 0x%04llx)", base, src, addr,
-           value & 0xFFFF);
+  LOG_INFO("  -> STOREH: [R%u + %d] = R%u (0x%lx = 0x%04llx)", base, offset,
+           src, addr, value & 0xFFFF);
 }
 
-void Simulator::exec_storew(uint8_t base, uint8_t src) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_storew(uint8_t src, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint64_t value = regs.read(src);
 
   memory.write_dword(addr, value & 0xFFFFFFFF);
-  LOG_INFO("  -> STOREW: [R%u] = R%u (0x%lx = 0x%08llx)", base, src, addr,
-           value & 0xFFFFFFFF);
+  LOG_INFO("  -> STOREW: [R%u + %d] = R%u (0x%lx = 0x%08llx)", base, offset,
+           src, addr, value & 0xFFFFFFFF);
 }
 
-void Simulator::exec_store(uint8_t base, uint8_t src) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_store(uint8_t src, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint64_t value = regs.read(src);
 
   memory.write_qword(addr, value);
-  LOG_INFO("  -> STORE: [R%u] = R%u (0x%lx = 0x%lx)", base, src, addr, value);
+  LOG_INFO("  -> STORE: [R%u + %d] = R%u (0x%lx = 0x%lx)", base, offset, src,
+           addr, value);
 }
 
-void Simulator::exec_loadbz(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_loadbz(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint8_t value = memory.read_byte(addr);
 
   regs.write(dest, value);
-  LOG_INFO("  -> LOADBZ: R%u = [R%u] (0x%lx = 0x%02llx)", dest, base, addr,
-           value);
+  LOG_INFO("  -> LOADBZ: R%u = [R%u + %d] (0x%lx = 0x%02llx)", dest, base,
+           offset, addr, value);
 }
 
-void Simulator::exec_loadbs(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_loadbs(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   int8_t value = static_cast<int8_t>(memory.read_byte(addr));
 
   regs.write(dest, static_cast<uint64_t>(value));
-  LOG_INFO("  -> LOADBS: R%u = [R%u] (0x%lx = 0x%02llx -> 0x%016llx)", dest,
-           base, addr, static_cast<uint8_t>(value), regs.read(dest));
+  LOG_INFO("  -> LOADBS: R%u = [R%u + %d] (0x%lx = 0x%02llx -> 0x%016llx)",
+           dest, base, offset, addr, static_cast<uint8_t>(value),
+           regs.read(dest));
 }
 
-void Simulator::exec_loadhz(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_loadhz(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint16_t value = memory.read_word(addr);
 
   regs.write(dest, value);
-  LOG_INFO("  -> LOADHZ: R%u = [R%u] (0x%lx = 0x%04llx)", dest, base, addr,
-           value);
+  LOG_INFO("  -> LOADHZ: R%u = [R%u + %d] (0x%lx = 0x%04llx)", dest, base,
+           offset, addr, value);
 }
 
-void Simulator::exec_loadhs(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_loadhs(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   int16_t value = static_cast<int16_t>(memory.read_word(addr));
 
   regs.write(dest, static_cast<uint64_t>(value));
-  LOG_INFO("  -> LOADHS: R%u = [R%u] (0x%lx = 0x%04llx -> 0x%016llx)", dest,
-           base, addr, static_cast<uint16_t>(value), regs.read(dest));
+  LOG_INFO("  -> LOADHS: R%u = [R%u + %d] (0x%lx = 0x%04llx -> 0x%016llx)",
+           dest, base, offset, addr, static_cast<uint16_t>(value),
+           regs.read(dest));
 }
 
-void Simulator::exec_loadwz(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_loadwz(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint32_t value = memory.read_dword(addr);
 
   regs.write(dest, value);
-  LOG_INFO("  -> LOADWZ: R%u = [R%u] (0x%lx = 0x%08llx)", dest, base, addr,
-           value);
+  LOG_INFO("  -> LOADWZ: R%u = [R%u + %d] (0x%lx = 0x%08llx)", dest, base,
+           offset, addr, value);
 }
 
-void Simulator::exec_loadws(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_loadws(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   int32_t value = static_cast<int32_t>(memory.read_dword(addr));
 
   regs.write(dest, static_cast<uint64_t>(value));
-  LOG_INFO("  -> LOADWS: R%u = [R%u] (0x%lx = 0x%08llx -> 0x%016llx)", dest,
-           base, addr, static_cast<uint32_t>(value), regs.read(dest));
+  LOG_INFO("  -> LOADWS: R%u = [R%u + %d] (0x%lx = 0x%08llx -> 0x%016llx)",
+           dest, base, offset, addr, static_cast<uint32_t>(value),
+           regs.read(dest));
 }
 
-void Simulator::exec_load(uint8_t dest, uint8_t base) {
-  uint64_t addr = regs.read(base);
+void Simulator::exec_load(uint8_t dest, uint8_t base, int32_t offset) {
+  uint64_t addr = regs.read(base) + offset;
   uint64_t value = memory.read_qword(addr);
 
   regs.write(dest, value);
-  LOG_INFO("  -> LOAD: R%u = [R%u] (0x%lx = 0x%lx)", dest, base, addr, value);
+  LOG_INFO("  -> LOAD: R%u = [R%u + %d] (0x%lx = 0x%lx)", dest, base, offset,
+           addr, value);
 }
 
-void Simulator::exec_call(uint8_t target_reg) {
+void Simulator::exec_call(uint32_t target_addr) {
+  // dump_stack_frame();
+  uint64_t target = target_addr;
+  uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
+
+  // Simple check for printf
+  if (loader && loader->is_printf_undefined() && target == 0) {
+    LOG_INFO("  -> CALL to printf detected");
+    exec_printf();
+    return;
+  }
+
+  // Validate target address
+  if (!memory.is_mapped(target)) {
+    LOG_ERROR("  -> CALL 0x%lx: target address 0x%lx is not mapped in memory!",
+              target, target);
+    LOG_ERROR("  -> Halting simulation due to invalid call target");
+    running = false;
+    return;
+  }
+
+  // Save return address to link register (R4)
+  regs.write(RA_REG, return_addr);
+
+  // Jump to target
+  regs.set_pc(target);
+
+  LOG_INFO("  -> CALL 0x%lx, return addr 0x%lx saved to R4", target,
+           return_addr);
+}
+
+void Simulator::exec_callreg(uint8_t target_reg) {
   // dump_stack_frame();
   uint64_t target = regs.read(target_reg);
   uint64_t return_addr = regs.get_pc(); // PC already advanced by fetch()
