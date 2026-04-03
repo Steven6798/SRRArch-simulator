@@ -35,7 +35,7 @@ enum class LoadResult {
   SEGMENT_LOAD_FAILED ///< Failed to load a program segment
 };
 
-const char *load_result_to_string(LoadResult result);
+const char *load_result_to_string(LoadResult result) noexcept;
 
 struct SectionInfo {
   std::string name;

@@ -6,11 +6,9 @@ add_library(registers_lib STATIC registers.cpp)
 add_library(simulator_lib STATIC simulator.cpp memory.cpp)
 
 # Specify include directories for all libraries
-target_include_directories(utils_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(elf_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(decoder_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(registers_lib PUBLIC ${CMAKE_CURRENT_Source_DIR})
-target_include_directories(simulator_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+foreach(lib utils_lib elf_lib decoder_lib registers_lib simulator_lib)
+    target_include_directories(${lib} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endforeach()
 
 # Define library dependencies
 target_link_libraries(simulator_lib

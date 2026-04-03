@@ -20,7 +20,7 @@
 
 namespace srrarch {
 
-const char *load_result_to_string(LoadResult result) {
+const char *load_result_to_string(LoadResult result) noexcept {
   switch (result) {
   case LoadResult::SUCCESS:
     return "Success";
