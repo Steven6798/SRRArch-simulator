@@ -41,8 +41,6 @@ public:
   uint16_t read_word(uint64_t addr) const;
   uint32_t read_dword(uint64_t addr) const;
   uint64_t read_qword(uint64_t addr) const;
-
-  // Generic read (size in bytes, 1-8)
   uint64_t read(uint64_t addr, size_t size) const;
 
   // Write operations
@@ -50,16 +48,11 @@ public:
   void write_word(uint64_t addr, uint16_t value);
   void write_dword(uint64_t addr, uint32_t value);
   void write_qword(uint64_t addr, uint64_t value);
-
-  // Generic write (size in bytes, 1-8)
   void write(uint64_t addr, uint64_t value, size_t size);
 
   // Query
   bool is_mapped(uint64_t addr) const;
   size_t total_bytes() const;
-
-  // Helper for bounds checking
-  bool check_range(uint64_t addr, size_t size) const;
 
   // Debug
   void dump_segment(uint64_t start, uint64_t end) const;
@@ -68,13 +61,24 @@ public:
 private:
   static constexpr uint64_t STACK_START = 0x80000000;
   static constexpr uint64_t STACK_SIZE = 2 * 1024 * 1024; // 2MB stack
-
   static constexpr uint64_t HEAP_START = 0x00010000;
   static constexpr uint64_t HEAP_SIZE = 32 * 1024 * 1024; // 32MB heap
 
   std::unique_ptr<uint8_t[]> stack;
   std::unique_ptr<uint8_t[]> heap;
   std::unordered_map<uint64_t, uint8_t> sparse;
+
+  // Helper methods for region checks
+  bool in_stack(uint64_t addr, size_t size = 1) const;
+  bool in_heap(uint64_t addr, size_t size = 1) const;
+
+  // Template implementations
+  template <typename T> T read_impl(uint64_t addr) const;
+  template <typename T> void write_impl(uint64_t addr, T value);
+
+  // Slow path helpers
+  template <typename T> T read_slow(uint64_t addr) const;
+  template <typename T> void write_slow(uint64_t addr, T value);
 };
 
 } // namespace srrarch

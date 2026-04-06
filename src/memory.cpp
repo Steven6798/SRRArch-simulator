@@ -38,179 +38,146 @@ bool Memory::load_segment(uint64_t addr, const uint8_t *src_data, size_t size) {
   return true;
 }
 
-bool Memory::check_range(uint64_t addr, size_t size) const {
-  for (size_t i = 0; i < size; i++) {
-    uint64_t current_addr = addr + i;
-
-    // Fast path for stack region (always mapped)
-    if (current_addr >= STACK_START &&
-        current_addr < STACK_START + STACK_SIZE) {
-      continue;
-    }
-
-    // Fast path for heap region (always mapped)
-    if (current_addr >= HEAP_START && current_addr < HEAP_START + HEAP_SIZE) {
-      continue;
-    }
-
-    // Check sparse map
-    if (sparse.find(current_addr) == sparse.end()) {
-      LOG_ERROR("Memory access violation at 0x%lx", current_addr);
-      return false;
-    }
-  }
-  return true;
+// Region check helpers
+inline bool Memory::in_stack(uint64_t addr, size_t size) const {
+  return addr >= STACK_START && addr + size <= STACK_START + STACK_SIZE;
 }
 
+inline bool Memory::in_heap(uint64_t addr, size_t size) const {
+  return addr >= HEAP_START && addr + size <= HEAP_START + HEAP_SIZE;
+}
+
+// Slow path for sparse reads
+template <typename T> T Memory::read_slow(uint64_t addr) const {
+  T value = 0;
+  for (size_t i = 0; i < sizeof(T); i++) {
+    auto it = sparse.find(addr + i);
+    if (it == sparse.end()) {
+      LOG_ERROR("Read from unmapped address 0x%lx", addr + i);
+      return 0;
+    }
+    // Cast to uint64_t first to avoid shift warnings
+    value |= static_cast<T>(static_cast<uint64_t>(it->second) << (i * 8));
+  }
+  return value;
+}
+
+template <typename T> void Memory::write_slow(uint64_t addr, T value) {
+  for (size_t i = 0; i < sizeof(T); i++) {
+    sparse[addr + i] = static_cast<uint8_t>((value >> (i * 8)) & 0xFF);
+  }
+}
+
+// Unified read implementation
+template <typename T> T Memory::read_impl(uint64_t addr) const {
+  if (in_stack(addr, sizeof(T))) {
+    T value;
+    std::memcpy(&value, stack.get() + (addr - STACK_START), sizeof(T));
+    return value;
+  }
+  if (in_heap(addr, sizeof(T))) {
+    T value;
+    std::memcpy(&value, heap.get() + (addr - HEAP_START), sizeof(T));
+    return value;
+  }
+  return read_slow<T>(addr);
+}
+
+// Unified write implementation
+template <typename T> void Memory::write_impl(uint64_t addr, T value) {
+  if (in_stack(addr, sizeof(T))) {
+    std::memcpy(stack.get() + (addr - STACK_START), &value, sizeof(T));
+    return;
+  }
+  if (in_heap(addr, sizeof(T))) {
+    std::memcpy(heap.get() + (addr - HEAP_START), &value, sizeof(T));
+    return;
+  }
+  write_slow<T>(addr, value);
+}
+
+// Explicit template instantiations
+template uint8_t Memory::read_impl<uint8_t>(uint64_t) const;
+template uint16_t Memory::read_impl<uint16_t>(uint64_t) const;
+template uint32_t Memory::read_impl<uint32_t>(uint64_t) const;
+template uint64_t Memory::read_impl<uint64_t>(uint64_t) const;
+
+template void Memory::write_impl<uint8_t>(uint64_t, uint8_t);
+template void Memory::write_impl<uint16_t>(uint64_t, uint16_t);
+template void Memory::write_impl<uint32_t>(uint64_t, uint32_t);
+template void Memory::write_impl<uint64_t>(uint64_t, uint64_t);
+
+// Public wrapper methods
 uint8_t Memory::read_byte(uint64_t addr) const {
-  // Fast path: stack region
-  if (addr >= STACK_START && addr < STACK_START + STACK_SIZE) {
-    uint64_t offset = addr - STACK_START;
-    if (offset >= STACK_SIZE) {
-      LOG_ERROR("Stack access out of bounds: 0x%lx", addr);
-      return 0;
-    }
-    return stack.get()[offset];
-  }
-
-  // Fast path: heap region
-  if (addr >= HEAP_START && addr < HEAP_START + HEAP_SIZE) {
-    uint64_t offset = addr - HEAP_START;
-    if (offset >= HEAP_SIZE) {
-      LOG_ERROR("Heap access out of bounds: 0x%lx", addr);
-      return 0;
-    }
-    return heap.get()[offset];
-  }
-
-  // Sparse region
-  auto it = sparse.find(addr);
-  if (it == sparse.end()) {
-    LOG_ERROR("Read from unmapped address 0x%lx", addr);
-    return 0;
-  }
-  return it->second;
-}
-
-void Memory::write_byte(uint64_t addr, uint8_t value) {
-  // Fast path: stack region
-  if (addr >= STACK_START && addr < STACK_START + STACK_SIZE) {
-    uint64_t offset = addr - STACK_START;
-    if (offset >= STACK_SIZE) {
-      LOG_ERROR("Stack access out of bounds: 0x%lx", addr);
-      return;
-    }
-    stack.get()[offset] = value;
-    return;
-  }
-
-  // Fast path: heap region
-  if (addr >= HEAP_START && addr < HEAP_START + HEAP_SIZE) {
-    uint64_t offset = addr - HEAP_START;
-    if (offset >= HEAP_SIZE) {
-      LOG_ERROR("Heap access out of bounds: 0x%lx", addr);
-      return;
-    }
-    heap.get()[offset] = value;
-    return;
-  }
-
-  // Sparse region
-  sparse[addr] = value;
+  return read_impl<uint8_t>(addr);
 }
 
 uint16_t Memory::read_word(uint64_t addr) const {
-  if (!check_range(addr, 2))
-    return 0;
-
-  uint16_t value = 0;
-  for (size_t i = 0; i < 2; i++) {
-    value |= static_cast<uint16_t>(read_byte(addr + i)) << (i * 8);
-  }
-  return value;
+  return read_impl<uint16_t>(addr);
 }
 
 uint32_t Memory::read_dword(uint64_t addr) const {
-  if (!check_range(addr, 4))
-    return 0;
-
-  uint32_t value = 0;
-  for (size_t i = 0; i < 4; i++) {
-    value |= static_cast<uint32_t>(read_byte(addr + i)) << (i * 8);
-  }
-  return value;
+  return read_impl<uint32_t>(addr);
 }
 
 uint64_t Memory::read_qword(uint64_t addr) const {
-  if (!check_range(addr, 8))
-    return 0;
-
-  uint64_t value = 0;
-  for (size_t i = 0; i < 8; i++) {
-    value |= static_cast<uint64_t>(read_byte(addr + i)) << (i * 8);
-  }
-  return value;
+  return read_impl<uint64_t>(addr);
 }
 
 uint64_t Memory::read(uint64_t addr, size_t size) const {
-  if (size > 8) {
-    LOG_ERROR("Invalid read size: %zu (max 8)", size);
-    return 0;
-  }
+  if (size == 8)
+    return read_qword(addr);
+  if (size == 4)
+    return read_dword(addr);
+  if (size == 2)
+    return read_word(addr);
+  if (size == 1)
+    return read_byte(addr);
+  LOG_ERROR("Invalid read size: %zu", size);
+  return 0;
+}
 
-  if (!check_range(addr, size))
-    return 0;
-
-  uint64_t value = 0;
-  for (size_t i = 0; i < size; i++) {
-    value |= static_cast<uint64_t>(read_byte(addr + i)) << (i * 8);
-  }
-
-  LOG_DBG("Read 0x%lx from 0x%lx (size: %zu)", value, addr, size);
-  return value;
+void Memory::write_byte(uint64_t addr, uint8_t value) {
+  write_impl<uint8_t>(addr, value);
 }
 
 void Memory::write_word(uint64_t addr, uint16_t value) {
-  LOG_DBG("Writing 0x%04x to 0x%lx", value, addr);
-  for (size_t i = 0; i < 2; i++) {
-    write_byte(addr + i, (value >> (i * 8)) & 0xFF);
-  }
+  write_impl<uint16_t>(addr, value);
 }
 
 void Memory::write_dword(uint64_t addr, uint32_t value) {
-  LOG_DBG("Writing 0x%08x to 0x%lx", value, addr);
-  for (size_t i = 0; i < 4; i++) {
-    write_byte(addr + i, (value >> (i * 8)) & 0xFF);
-  }
+  write_impl<uint32_t>(addr, value);
 }
 
 void Memory::write_qword(uint64_t addr, uint64_t value) {
-  LOG_DBG("Writing 0x%016lx to 0x%lx", value, addr);
-  for (size_t i = 0; i < 8; i++) {
-    write_byte(addr + i, (value >> (i * 8)) & 0xFF);
-  }
+  write_impl<uint64_t>(addr, value);
 }
 
 void Memory::write(uint64_t addr, uint64_t value, size_t size) {
-  if (size > 8) {
-    LOG_ERROR("Invalid write size: %zu (max 8)", size);
+  if (size == 8) {
+    write_qword(addr, value);
     return;
   }
-
-  LOG_DBG("Writing 0x%lx to 0x%lx (size: %zu)", value, addr, size);
-  for (size_t i = 0; i < size; i++) {
-    write_byte(addr + i, (value >> (i * 8)) & 0xFF);
+  if (size == 4) {
+    write_dword(addr, value & 0xFFFFFFFF);
+    return;
   }
+  if (size == 2) {
+    write_word(addr, value & 0xFFFF);
+    return;
+  }
+  if (size == 1) {
+    write_byte(addr, value & 0xFF);
+    return;
+  }
+  LOG_ERROR("Invalid write size: %zu", size);
 }
 
 bool Memory::is_mapped(uint64_t addr) const {
-  // Stack and heap are always mapped
-  if (addr >= STACK_START && addr < STACK_START + STACK_SIZE)
+  if (in_stack(addr))
     return true;
-  if (addr >= HEAP_START && addr < HEAP_START + HEAP_SIZE)
+  if (in_heap(addr))
     return true;
-
-  // Check sparse map
   return sparse.find(addr) != sparse.end();
 }
 
