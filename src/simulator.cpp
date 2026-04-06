@@ -294,7 +294,6 @@ void Simulator::execute(const Instruction &inst) {
 void Simulator::run() {
   running = true;
   instruction_count = 0;
-
   LOG_INFO("=== Starting simulation ===");
   LOG_INFO("Entry point: 0x%lx", entry_point);
   // LOG_DBG("Initial register state:");
@@ -586,7 +585,8 @@ void Simulator::exec_cmpugt(const DecodedR &dec) {
 
 // Memory operations
 void Simulator::exec_storeb(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint64_t value = regs.read(dec.reg);
   memory.write_byte(addr, value & 0xFF);
   LOG_INFO("  -> STOREB: [R%u + %d] = R%u (0x%lx = 0x%02llx)", dec.base,
@@ -594,7 +594,8 @@ void Simulator::exec_storeb(const DecodedMem &dec) {
 }
 
 void Simulator::exec_storeh(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint64_t value = regs.read(dec.reg);
   memory.write_word(addr, value & 0xFFFF);
   LOG_INFO("  -> STOREH: [R%u + %d] = R%u (0x%lx = 0x%04llx)", dec.base,
@@ -602,7 +603,8 @@ void Simulator::exec_storeh(const DecodedMem &dec) {
 }
 
 void Simulator::exec_storew(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint64_t value = regs.read(dec.reg);
   memory.write_dword(addr, value & 0xFFFFFFFF);
   LOG_INFO("  -> STOREW: [R%u + %d] = R%u (0x%lx = 0x%08llx)", dec.base,
@@ -610,7 +612,8 @@ void Simulator::exec_storew(const DecodedMem &dec) {
 }
 
 void Simulator::exec_store(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint64_t value = regs.read(dec.reg);
   memory.write_qword(addr, value);
   LOG_INFO("  -> STORE: [R%u + %d] = R%u (0x%lx = 0x%lx)", dec.base, dec.offset,
@@ -618,7 +621,8 @@ void Simulator::exec_store(const DecodedMem &dec) {
 }
 
 void Simulator::exec_loadbz(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint8_t value = memory.read_byte(addr);
   regs.write(dec.reg, value);
   LOG_INFO("  -> LOADBZ: R%u = [R%u + %d] (0x%lx = 0x%02llx)", dec.reg,
@@ -626,7 +630,8 @@ void Simulator::exec_loadbz(const DecodedMem &dec) {
 }
 
 void Simulator::exec_loadbs(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const int8_t value = static_cast<int8_t>(memory.read_byte(addr));
   regs.write(dec.reg, static_cast<uint64_t>(value));
   LOG_INFO("  -> LOADBS: R%u = [R%u + %d] (0x%lx = 0x%02llx -> 0x%016llx)",
@@ -635,7 +640,8 @@ void Simulator::exec_loadbs(const DecodedMem &dec) {
 }
 
 void Simulator::exec_loadhz(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint16_t value = memory.read_word(addr);
   regs.write(dec.reg, value);
   LOG_INFO("  -> LOADHZ: R%u = [R%u + %d] (0x%lx = 0x%04llx)", dec.reg,
@@ -643,7 +649,8 @@ void Simulator::exec_loadhz(const DecodedMem &dec) {
 }
 
 void Simulator::exec_loadhs(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const int16_t value = static_cast<int16_t>(memory.read_word(addr));
   regs.write(dec.reg, static_cast<uint64_t>(value));
   LOG_INFO("  -> LOADHS: R%u = [R%u + %d] (0x%lx = 0x%04llx -> 0x%016llx)",
@@ -652,7 +659,8 @@ void Simulator::exec_loadhs(const DecodedMem &dec) {
 }
 
 void Simulator::exec_loadwz(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint32_t value = memory.read_dword(addr);
   regs.write(dec.reg, value);
   LOG_INFO("  -> LOADWZ: R%u = [R%u + %d] (0x%lx = 0x%08llx)", dec.reg,
@@ -660,7 +668,8 @@ void Simulator::exec_loadwz(const DecodedMem &dec) {
 }
 
 void Simulator::exec_loadws(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const int32_t value = static_cast<int32_t>(memory.read_dword(addr));
   regs.write(dec.reg, static_cast<uint64_t>(value));
   LOG_INFO("  -> LOADWS: R%u = [R%u + %d] (0x%lx = 0x%08llx -> 0x%016llx)",
@@ -669,7 +678,8 @@ void Simulator::exec_loadws(const DecodedMem &dec) {
 }
 
 void Simulator::exec_load(const DecodedMem &dec) {
-  const uint64_t addr = regs.read(dec.base) + dec.offset;
+  const uint64_t addr = static_cast<uint64_t>(
+      static_cast<int64_t>(regs.read(dec.base)) + dec.offset);
   const uint64_t value = memory.read_qword(addr);
   regs.write(dec.reg, value);
   LOG_INFO("  -> LOAD: R%u = [R%u + %d] (0x%lx = 0x%lx)", dec.reg, dec.base,
