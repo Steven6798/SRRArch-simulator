@@ -25,14 +25,18 @@ set(BASE_LIBS
     ${LLVM_LIBRARIES}
 )
 
-# Debug executable
-add_executable(SRRArch-simulator-debug main.cpp)
-target_compile_definitions(SRRArch-simulator-debug PRIVATE
-    DEBUG
-    CURRENT_LOG_LEVEL=LOG_LEVEL_INFO
+# For debugging, just compile everything together
+add_executable(SRRArch-simulator-debug
+    main.cpp
+    logger.cpp
+    elf_loader.cpp
+    instruction.cpp
+    registers.cpp
+    simulator.cpp
+    memory.cpp
 )
 target_compile_options(SRRArch-simulator-debug PRIVATE -g -O0)
-target_link_libraries(SRRArch-simulator-debug PRIVATE ${BASE_LIBS})
+target_link_libraries(SRRArch-simulator-debug PRIVATE ${LLVM_LIBRARIES})
 
 # Release executable
 add_executable(SRRArch-simulator-release main.cpp)
