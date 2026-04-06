@@ -1,12 +1,12 @@
 # Create libraries
 add_library(utils_lib STATIC logger.cpp)
 add_library(elf_lib STATIC elf_loader.cpp)
-add_library(decoder_lib STATIC decoder.cpp instruction.cpp)
+add_library(instruction_lib STATIC instruction.cpp)
 add_library(registers_lib STATIC registers.cpp)
 add_library(simulator_lib STATIC simulator.cpp memory.cpp)
 
 # Specify include directories for all libraries
-foreach(lib utils_lib elf_lib decoder_lib registers_lib simulator_lib)
+foreach(lib utils_lib elf_lib instruction_lib registers_lib simulator_lib)
     target_include_directories(${lib} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endforeach()
 
@@ -14,7 +14,7 @@ endforeach()
 target_link_libraries(simulator_lib
     PUBLIC
     elf_lib
-    decoder_lib
+    instruction_lib
     registers_lib
 )
 
