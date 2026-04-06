@@ -42,9 +42,6 @@ public:
   // Run the program
   void run();
 
-  // Single step execution (for debugging)
-  void step();
-
   void dump_stack(uint64_t bytes = 128) const;
   void dump_stack_frame() const;
 
@@ -68,70 +65,70 @@ private:
   // Instruction implementations
   void exec_nop();
   void exec_return();
-  void exec_genint(uint8_t reg, uint32_t imm);
-  void exec_mov(uint8_t dest, uint8_t src);
+  void exec_genint(const DecodedGenInt &dec);
+  void exec_mov(const DecodedMov &dec);
 
   // Arithmetic register-register
-  void exec_add(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_sub(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_mul(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_sdiv(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_udiv(uint8_t dest, uint8_t src1, uint8_t src2);
+  void exec_add(const DecodedR &dec);
+  void exec_sub(const DecodedR &dec);
+  void exec_mul(const DecodedR &dec);
+  void exec_sdiv(const DecodedR &dec);
+  void exec_udiv(const DecodedR &dec);
 
   // Arithmetic register-immediate
-  void exec_addi(uint8_t dest, uint8_t src, int32_t imm);
-  void exec_subi(uint8_t dest, uint8_t src, int32_t imm);
+  void exec_addi(const DecodedRI &dec);
+  void exec_subi(const DecodedRI &dec);
 
   // Logical register-register
-  void exec_and(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_or(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_xor(uint8_t dest, uint8_t src1, uint8_t src2);
+  void exec_and(const DecodedR &dec);
+  void exec_or(const DecodedR &dec);
+  void exec_xor(const DecodedR &dec);
 
   // Logical register-immediate
-  void exec_andi(uint8_t dest, uint8_t src, int32_t imm);
-  void exec_ori(uint8_t dest, uint8_t src, int32_t imm);
-  void exec_xori(uint8_t dest, uint8_t src, int32_t imm);
+  void exec_andi(const DecodedRI &dec);
+  void exec_ori(const DecodedRI &dec);
+  void exec_xori(const DecodedRI &dec);
 
   // Shifts register-register
-  void exec_shl(uint8_t dest, uint8_t src, uint8_t amount);
-  void exec_sra(uint8_t dest, uint8_t src, uint8_t amount);
-  void exec_srl(uint8_t dest, uint8_t src, uint8_t amount);
+  void exec_shl(const DecodedR &dec);
+  void exec_sra(const DecodedR &dec);
+  void exec_srl(const DecodedR &dec);
 
   // Shifts register-immediate
-  void exec_shli(uint8_t dest, uint8_t src, int32_t shift);
-  void exec_srai(uint8_t dest, uint8_t src, int32_t shift);
-  void exec_srli(uint8_t dest, uint8_t src, int32_t shift);
+  void exec_shli(const DecodedRI &dec);
+  void exec_srai(const DecodedRI &dec);
+  void exec_srli(const DecodedRI &dec);
 
   // Comparisons (set dest to 1 or 0)
-  void exec_cmpeq(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_cmpne(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_cmplt(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_cmpgt(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_cmpugt(uint8_t dest, uint8_t src1, uint8_t src2);
-  void exec_cmpult(uint8_t dest, uint8_t src1, uint8_t src2);
+  void exec_cmpeq(const DecodedR &dec);
+  void exec_cmpne(const DecodedR &dec);
+  void exec_cmplt(const DecodedR &dec);
+  void exec_cmpgt(const DecodedR &dec);
+  void exec_cmpult(const DecodedR &dec);
+  void exec_cmpugt(const DecodedR &dec);
 
   // Memory operations
-  void exec_storeb(uint8_t src, uint8_t base, int32_t offset);
-  void exec_storeh(uint8_t src, uint8_t base, int32_t offset);
-  void exec_storew(uint8_t src, uint8_t base, int32_t offset);
-  void exec_store(uint8_t src, uint8_t base, int32_t offset);
+  void exec_storeb(const DecodedMem &dec);
+  void exec_storeh(const DecodedMem &dec);
+  void exec_storew(const DecodedMem &dec);
+  void exec_store(const DecodedMem &dec);
 
-  void exec_loadbz(uint8_t dest, uint8_t base, int32_t offset);
-  void exec_loadbs(uint8_t dest, uint8_t base, int32_t offset);
-  void exec_loadhz(uint8_t dest, uint8_t base, int32_t offset);
-  void exec_loadhs(uint8_t dest, uint8_t base, int32_t offset);
-  void exec_loadwz(uint8_t dest, uint8_t base, int32_t offset);
-  void exec_loadws(uint8_t dest, uint8_t base, int32_t offset);
-  void exec_load(uint8_t dest, uint8_t base, int32_t offset);
+  void exec_loadbz(const DecodedMem &dec);
+  void exec_loadbs(const DecodedMem &dec);
+  void exec_loadhz(const DecodedMem &dec);
+  void exec_loadhs(const DecodedMem &dec);
+  void exec_loadwz(const DecodedMem &dec);
+  void exec_loadws(const DecodedMem &dec);
+  void exec_load(const DecodedMem &dec);
 
-  void exec_call(uint32_t target_addr);
-  void exec_callreg(uint8_t target_reg);
+  void exec_call(const DecodedCall &dec);
+  void exec_callreg(const DecodedCallReg &dec);
 
   // Special case to handle print until it can be compiled natively.
   void exec_printf();
 
-  void exec_br(uint32_t target_addr);
-  void exec_brcond(uint8_t cond_reg, uint32_t target_addr);
+  void exec_br(const DecodedBranch &dec);
+  void exec_brcond(const DecodedCondBranch &dec);
 };
 
 } // namespace srrarch

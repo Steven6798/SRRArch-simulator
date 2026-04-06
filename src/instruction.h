@@ -2,9 +2,8 @@
  * @file instruction.h
  * @brief Instruction representation for SRRArch
  *
- * Encapsulates a 64-bit instruction with methods to extract
- * opcode, register fields, and immediates according to the
- * SRRArch instruction encoding.
+ * Encapsulates a 64-bit instruction with pre-decoded fields for
+ * fast execution using type-specific decoded structures.
  *
  * @author SRRArch Simulator Team
  * @version 0.1.0
@@ -19,7 +18,6 @@
 
 namespace srrarch {
 
-// Custom opcodes as enum class for type safety
 enum class Opcode : uint8_t {
   // Arithmetic/Logical (0x00-0x11)
   NOP = 0x00,
@@ -106,6 +104,52 @@ constexpr const char *opcode_to_string(Opcode op) {
   return OPCODE_NAMES[static_cast<size_t>(op)];
 }
 
+// Type-specific decoded structures
+struct DecodedR {
+  uint8_t dest;
+  uint8_t src1;
+  uint8_t src2;
+};
+
+struct DecodedRI {
+  uint8_t dest;
+  uint8_t src;
+  int32_t imm;
+};
+
+struct DecodedMem {
+  uint8_t reg; // dest for LOAD, source for STORE
+  uint8_t base;
+  int32_t offset;
+};
+
+struct DecodedBranch {
+  uint32_t target;
+};
+
+struct DecodedCondBranch {
+  uint8_t cond_reg;
+  uint32_t target;
+};
+
+struct DecodedCall {
+  uint32_t target;
+};
+
+struct DecodedCallReg {
+  uint8_t target_reg;
+};
+
+struct DecodedGenInt {
+  uint8_t reg;
+  uint32_t imm;
+};
+
+struct DecodedMov {
+  uint8_t dest;
+  uint8_t src;
+};
+
 class Instruction {
 public:
   // Construct from raw 64-bit little-endian value
@@ -115,143 +159,47 @@ public:
   explicit Instruction(const uint8_t *bytes);
 
   // Basic info
-  __attribute__((always_inline)) inline Opcode opcode() const {
-    return static_cast<Opcode>(raw & 0xFF);
-  }
-  __attribute__((always_inline)) inline uint64_t raw_value() const {
-    return raw;
-  }
+  Opcode opcode() const { return _opcode; }
+  uint64_t raw_value() const { return raw; }
 
-  // Core register access (5 bits each)
-  __attribute__((always_inline)) inline uint8_t reg1() const {
-    return (raw >> 8) & 0x1F;
-  } // bits 8-12
-  __attribute__((always_inline)) inline uint8_t reg2() const {
-    return (raw >> 13) & 0x1F;
-  } // bits 13-17
-  __attribute__((always_inline)) inline uint8_t reg3() const {
-    return (raw >> 18) & 0x1F;
-  } // bits 18-22
-
-  // For immediate ALU operations (12-bit immediate at bit 18)
-  __attribute__((always_inline)) inline int32_t alu_imm() const {
-    uint32_t imm12 = (raw >> 18) & 0xFFF;
-
-    // Shift left 20, then arithmetic shift right 20 to sign-extend
-    return static_cast<int32_t>(imm12 << 20) >> 20;
-  }
-
-  // Arithmetic/Logical
-  __attribute__((always_inline)) inline uint8_t arith_dest() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint8_t arith_src1() const {
-    return reg2();
-  }
-  __attribute__((always_inline)) inline uint8_t arith_src2() const {
-    return reg3();
-  }
-  __attribute__((always_inline)) inline int32_t arith_imm() const {
-    return alu_imm();
-  }
-
-  // MOV
-  __attribute__((always_inline)) inline uint8_t mov_dest() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint8_t mov_src() const {
-    return reg2();
-  }
-
-  // For loads/stores
-  __attribute__((always_inline)) inline uint8_t load_dest() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint8_t store_source() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint8_t mem_base() const {
-    return reg2();
-  }
-  __attribute__((always_inline)) inline int32_t mem_offset() const {
-    // 12-bit signed immediate at bits 18-29
-    uint32_t imm12 = (raw >> 18) & 0xFFF;
-    return static_cast<int32_t>(imm12 << 20) >> 20;
-  }
-
-  // RETURN
-  __attribute__((always_inline)) inline uint8_t return_reg() const {
-    return reg1();
-  }
-
-  // GENINT
-  __attribute__((always_inline)) inline uint8_t genint_reg() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint32_t genint_imm() const {
-    return (raw >> 13) & 0xFFFFFFFF;
-  }
-
-  // Comparison
-  __attribute__((always_inline)) inline uint8_t cmp_dest() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint8_t cmp_src1() const {
-    return reg2();
-  }
-  __attribute__((always_inline)) inline uint8_t cmp_src2() const {
-    return reg3();
-  }
-
-  // Shift
-  __attribute__((always_inline)) inline uint8_t shift_dest() const {
-    return reg1();
-  }
-  __attribute__((always_inline)) inline uint8_t shift_src1() const {
-    return reg2();
-  }
-  __attribute__((always_inline)) inline uint8_t shift_src2() const {
-    return reg3();
-  }
-  __attribute__((always_inline)) inline int32_t shift_imm() const {
-    return alu_imm();
-  }
-
-  // CALLREG (1 register: target address in register)
-  __attribute__((always_inline)) inline uint8_t call_source() const {
-    return reg1();
-  }
-
-  // For CALL - 32-bit absolute target address starting at bit 8
-  __attribute__((always_inline)) inline uint32_t call_target() const {
-    return (raw >> 8) & 0xFFFFFFFF;
-  }
-
-  // For BRCOND - 32-bit absolute target address starting at bit 13
-  __attribute__((always_inline)) inline uint32_t brcond_target() const {
-    return (raw >> 13) & 0xFFFFFFFF;
-  }
-
-  // For BRCOND - condition register
-  __attribute__((always_inline)) inline uint8_t brcond_reg() const {
-    return reg1();
-  }
-
-  // For BR - 32-bit absolute target address starting at bit 8
-  __attribute__((always_inline)) inline uint32_t br_target() const {
-    return (raw >> 8) & 0xFFFFFFFF;
-  }
+  // Type-safe accessors
+  const DecodedR &as_r() const { return data.r; }
+  const DecodedRI &as_ri() const { return data.ri; }
+  const DecodedMem &as_mem() const { return data.mem; }
+  const DecodedBranch &as_branch() const { return data.branch; }
+  const DecodedCondBranch &as_cond_branch() const { return data.cond_branch; }
+  const DecodedCall &as_call() const { return data.call; }
+  const DecodedCallReg &as_callreg() const { return data.callreg; }
+  const DecodedGenInt &as_genint() const { return data.genint; }
+  const DecodedMov &as_mov() const { return data.mov; }
 
   // Utility
   size_t register_count() const;
   std::string to_string() const;
   void print() const;
-
-  // For debugging
   void print_bytes() const;
 
 private:
-  uint64_t raw; // Raw 64-bit instruction
+  uint64_t raw;
+  Opcode _opcode;
+
+  union DecodedData {
+    DecodedR r;
+    DecodedRI ri;
+    DecodedMem mem;
+    DecodedBranch branch;
+    DecodedCondBranch cond_branch;
+    DecodedCall call;
+    DecodedCallReg callreg;
+    DecodedGenInt genint;
+    DecodedMov mov;
+
+    DecodedData() {}
+    ~DecodedData() {}
+  } data;
+
+  void decode(uint64_t raw);
+  static uint64_t assemble_raw(const uint8_t *bytes);
 };
 
 } // namespace srrarch
