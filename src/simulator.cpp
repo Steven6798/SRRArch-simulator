@@ -120,7 +120,7 @@ void Simulator::execute(const Instruction &inst) {
 
   LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
 
-#if CURRENT_LOG_LEVEL >= LOG_LEVEL_NONE
+#if CURRENT_LOG_LEVEL >= LOG_LEVEL_INFO
   inst.print_bytes();
   inst.print();
 #endif
@@ -287,8 +287,6 @@ void Simulator::execute(const Instruction &inst) {
     running = false;
     break;
   }
-
-  instruction_count++;
 }
 
 void Simulator::run() {
