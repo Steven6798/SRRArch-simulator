@@ -291,13 +291,91 @@ void Simulator::execute(const Instruction &inst) {
   instruction_count++;
 }
 
-void Simulator::run() {
+// -----------------------------------------------------------------------------
+// Basic Block Cache Implementation
+// -----------------------------------------------------------------------------
+
+Simulator::BasicBlock *Simulator::get_basic_block(uint64_t pc) {
+  auto it = block_cache.find(pc);
+  if (it != block_cache.end()) {
+    it->second->last_executed = instruction_count;
+    cache_hits++;
+    return it->second.get();
+  }
+  cache_misses++;
+  return nullptr;
+}
+
+void Simulator::evict_lru_block() {
+  if (block_cache.empty())
+    return;
+  auto lru = block_cache.begin();
+  for (auto it = block_cache.begin(); it != block_cache.end(); ++it) {
+    if (it->second->last_executed < lru->second->last_executed) {
+      lru = it;
+    }
+  }
+  block_cache.erase(lru);
+}
+
+void Simulator::cache_basic_block(uint64_t start_pc) {
+  const size_t MAX_CACHE_SIZE = 10000;
+  if (block_cache.size() >= MAX_CACHE_SIZE) {
+    evict_lru_block();
+  }
+
+  auto block = std::make_unique<BasicBlock>();
+  block->start_pc = start_pc;
+  block->last_executed = instruction_count;
+
+  uint64_t pc = start_pc;
+  bool is_terminator = false;
+
+  while (!is_terminator) {
+    uint64_t raw = fetch();
+    pc = regs.get_pc();
+    uint8_t op = raw & 0xFF;
+    Instruction inst(raw);
+    LOG_INFO("  Adding instruction at 0x%lx: %s", pc, inst.to_string().c_str());
+
+    block->instructions.push_back(inst);
+
+    // Stop at any control flow instruction
+    switch (static_cast<Opcode>(op)) {
+    case Opcode::BR:
+    case Opcode::BRCOND:
+    case Opcode::CALL:
+    case Opcode::CALLREG:
+    case Opcode::RETURN:
+      is_terminator = true;
+      break;
+    default:
+      break;
+    }
+  }
+
+  block->end_pc = pc;
+
+  LOG_INFO("Cached block at 0x%lx with %zu instructions", start_pc,
+           block->instructions.size());
+
+  block_cache[start_pc] = std::move(block);
+}
+
+void Simulator::execute_basic_block(const BasicBlock &block) {
+  regs.set_pc(block.end_pc);
+  for (size_t i = 0; i < block.instructions.size(); ++i) {
+    execute(block.instructions[i]);
+    if (!running)
+      break;
+  }
+}
+
+void Simulator::run_interpreter() {
   running = true;
   instruction_count = 0;
-  LOG_INFO("=== Starting simulation ===");
+  LOG_INFO("=== Starting simulation (interpreter mode) ===");
   LOG_INFO("Entry point: 0x%lx", entry_point);
-  // LOG_DBG("Initial register state:");
-  //   regs.dump();
 
   while (running) {
     uint64_t raw_inst = fetch();
@@ -314,8 +392,54 @@ void Simulator::run() {
 
   LOG_INFO("=== Simulation finished ===");
   LOG_INFO("Executed %lu instructions", instruction_count);
-  // LOG_DBG("Final register state:");
-  //   regs.dump();
+}
+
+void Simulator::run_block_cache() {
+  running = true;
+  instruction_count = 0;
+  cache_hits = 0;
+  cache_misses = 0;
+
+  LOG_INFO("=== Starting simulation (basic block cache mode) ===");
+  LOG_INFO("Entry point: 0x%lx", entry_point);
+
+  while (running && instruction_count < max_instructions) {
+    uint64_t pc = regs.get_pc();
+
+    BasicBlock *block = get_basic_block(pc);
+    if (block == nullptr) {
+      cache_basic_block(pc);
+      block = get_basic_block(pc);
+      if (block == nullptr) {
+        LOG_ERROR("Failed to cache block at 0x%lx", pc);
+        break;
+      }
+    }
+
+    execute_basic_block(*block);
+  }
+
+  LOG_INFO("=== Simulation finished ===");
+  LOG_INFO("Executed %lu instructions", instruction_count);
+  double hit_rate = (cache_hits + cache_misses) > 0
+                        ? 100.0 * static_cast<double>(cache_hits) /
+                              static_cast<double>(cache_hits + cache_misses)
+                        : 0.0;
+  LOG_INFO("Block cache hits: %zu, misses: %zu, hit rate: %.2f%%", cache_hits,
+           cache_misses, hit_rate);
+
+  // Always print hit rate to stderr, regardless of log level
+  fprintf(stderr, "Basic block cache: hits=%zu, misses=%zu, hit_rate=%.2f%%\n",
+          cache_hits, cache_misses, hit_rate);
+  fflush(stderr);
+}
+
+void Simulator::run() {
+  if (use_block_cache) {
+    run_block_cache();
+  } else {
+    run_interpreter();
+  }
 }
 
 // Instruction implementations

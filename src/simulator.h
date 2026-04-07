@@ -18,6 +18,9 @@
 #include "instruction.h"
 #include "memory.h"
 #include "registers.h"
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace srrarch {
 
@@ -46,6 +49,7 @@ public:
   void dump_stack_frame() const;
 
   void set_max_instructions(uint64_t max) { max_instructions = max; }
+  void set_use_block_cache(bool enable) { use_block_cache = enable; }
 
 private:
   Registers regs;
@@ -53,13 +57,34 @@ private:
   Memory memory;
   uint64_t entry_point = 0;
   bool running = false;
+  bool use_block_cache = false;
   uint64_t instruction_count = 0;
   uint64_t max_instructions = 10000;
 
-  // Fetch instruction at current PC
-  __attribute__((always_inline)) inline uint64_t fetch();
+  // Basic Block Cache structures
+  struct BasicBlock {
+    uint64_t start_pc;
+    uint64_t end_pc;
+    std::vector<Instruction> instructions;
+    uint64_t last_executed;
+  };
 
-  // Execute a single instruction
+  std::unordered_map<uint64_t, std::unique_ptr<BasicBlock>> block_cache;
+  size_t cache_hits = 0;
+  size_t cache_misses = 0;
+
+  // Cache management
+  BasicBlock *get_basic_block(uint64_t pc);
+  void cache_basic_block(uint64_t pc);
+  void evict_lru_block();
+
+  // Execution modes
+  void run_interpreter();
+  void run_block_cache();
+  void execute_basic_block(const BasicBlock &block);
+
+  // Fetch and execute
+  __attribute__((always_inline)) inline uint64_t fetch();
   void execute(const Instruction &inst);
 
   // Instruction implementations
