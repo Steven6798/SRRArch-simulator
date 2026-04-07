@@ -118,12 +118,12 @@ void Simulator::execute(const Instruction &inst) {
     return;
   }
 
-  LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
+  // LOG_INFO("[%6lu] PC=0x%lx", instruction_count, regs.get_pc() - 8);
 
-#if CURRENT_LOG_LEVEL >= LOG_LEVEL_INFO
-  inst.print_bytes();
-  inst.print();
-#endif
+  // #if CURRENT_LOG_LEVEL >= LOG_LEVEL_INFO
+  //   // inst.print_bytes();
+  //   // inst.print();
+  // #endif
 
   // Dispatch using pre-decoded data
   switch (op) {
@@ -328,20 +328,20 @@ void Simulator::cache_basic_block(uint64_t start_pc) {
   block->start_pc = start_pc;
   block->last_executed = instruction_count;
 
-  uint64_t pc = start_pc;
   bool is_terminator = false;
-
   while (!is_terminator) {
     uint64_t raw = fetch();
-    pc = regs.get_pc();
-    uint8_t op = raw & 0xFF;
+    if (!running)
+      return;
+
     Instruction inst(raw);
-    LOG_INFO("  Adding instruction at 0x%lx: %s", pc, inst.to_string().c_str());
+    LOG_INFO("  Adding instruction at 0x%lx: %s", regs.get_pc() - 8,
+             inst.to_string().c_str());
 
     block->instructions.push_back(inst);
 
     // Stop at any control flow instruction
-    switch (static_cast<Opcode>(op)) {
+    switch (static_cast<Opcode>(raw & 0xFF)) {
     case Opcode::BR:
     case Opcode::BRCOND:
     case Opcode::CALL:
@@ -354,7 +354,7 @@ void Simulator::cache_basic_block(uint64_t start_pc) {
     }
   }
 
-  block->end_pc = pc;
+  block->end_pc = regs.get_pc() - 8;
 
   LOG_INFO("Cached block at 0x%lx with %zu instructions", start_pc,
            block->instructions.size());
@@ -363,7 +363,6 @@ void Simulator::cache_basic_block(uint64_t start_pc) {
 }
 
 void Simulator::execute_basic_block(const BasicBlock &block) {
-  regs.set_pc(block.end_pc);
   for (size_t i = 0; i < block.instructions.size(); ++i) {
     execute(block.instructions[i]);
     if (!running)
@@ -409,6 +408,9 @@ void Simulator::run_block_cache() {
     BasicBlock *block = get_basic_block(pc);
     if (block == nullptr) {
       cache_basic_block(pc);
+      if (!running)
+        break;
+
       block = get_basic_block(pc);
       if (block == nullptr) {
         LOG_ERROR("Failed to cache block at 0x%lx", pc);
@@ -429,9 +431,10 @@ void Simulator::run_block_cache() {
            cache_misses, hit_rate);
 
   // Always print hit rate to stderr, regardless of log level
-  fprintf(stderr, "Basic block cache: hits=%zu, misses=%zu, hit_rate=%.2f%%\n",
-          cache_hits, cache_misses, hit_rate);
-  fflush(stderr);
+  // fprintf(stderr, "Basic block cache: hits=%zu, misses=%zu,
+  // hit_rate=%.2f%%\n",
+  //         cache_hits, cache_misses, hit_rate);
+  // fflush(stderr);
 }
 
 void Simulator::run() {
