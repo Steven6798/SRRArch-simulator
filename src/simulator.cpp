@@ -287,6 +287,8 @@ void Simulator::execute(const Instruction &inst) {
     running = false;
     break;
   }
+
+  instruction_count++;
 }
 
 void Simulator::run() {
