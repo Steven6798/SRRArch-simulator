@@ -59,10 +59,17 @@ public:
   void dump() const;
 
 private:
-  static constexpr uint64_t STACK_START = 0x80000000;
+  // Stack grows DOWNWARD from STACK_TOP to STACK_BOTTOM
+  // Highest address (initial SP)
+  static constexpr uint64_t STACK_TOP = 0x80000000;
   static constexpr uint64_t STACK_SIZE = 2 * 1024 * 1024; // 2MB stack
+  // Lowest address
+  static constexpr uint64_t STACK_BOTTOM = STACK_TOP - STACK_SIZE;
+
+  // Heap grows UPWARD from HEAP_START to HEAP_END
   static constexpr uint64_t HEAP_START = 0x00010000;
   static constexpr uint64_t HEAP_SIZE = 32 * 1024 * 1024; // 32MB heap
+  static constexpr uint64_t HEAP_END = HEAP_START + HEAP_SIZE;
 
   std::unique_ptr<uint8_t[]> stack;
   std::unique_ptr<uint8_t[]> heap;
@@ -71,6 +78,10 @@ private:
   // Helper methods for region checks
   bool in_stack(uint64_t addr, size_t size = 1) const;
   bool in_heap(uint64_t addr, size_t size = 1) const;
+
+  // Helper methods for offset calculation
+  uint64_t stack_offset(uint64_t addr) const;
+  uint64_t heap_offset(uint64_t addr) const;
 
   // Template implementations
   template <typename T> T read_impl(uint64_t addr) const;

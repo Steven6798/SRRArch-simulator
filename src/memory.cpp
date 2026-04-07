@@ -39,13 +39,20 @@ bool Memory::load_segment(uint64_t addr, const uint8_t *src_data, size_t size) {
 }
 
 // Region check helpers
-inline bool Memory::in_stack(uint64_t addr, size_t size) const {
-  return addr >= STACK_START && addr + size <= STACK_START + STACK_SIZE;
+bool Memory::in_stack(uint64_t addr, size_t size) const {
+  return addr >= STACK_BOTTOM && addr + size <= STACK_TOP;
 }
 
-inline bool Memory::in_heap(uint64_t addr, size_t size) const {
-  return addr >= HEAP_START && addr + size <= HEAP_START + HEAP_SIZE;
+bool Memory::in_heap(uint64_t addr, size_t size) const {
+  return addr >= HEAP_START && addr + size <= HEAP_END;
 }
+
+// Offset calculation helpers
+uint64_t Memory::stack_offset(uint64_t addr) const {
+  return addr - STACK_BOTTOM;
+}
+
+uint64_t Memory::heap_offset(uint64_t addr) const { return addr - HEAP_START; }
 
 // Slow path for sparse reads
 template <typename T> T Memory::read_slow(uint64_t addr) const {
@@ -72,12 +79,12 @@ template <typename T> void Memory::write_slow(uint64_t addr, T value) {
 template <typename T> T Memory::read_impl(uint64_t addr) const {
   if (in_stack(addr, sizeof(T))) {
     T value;
-    std::memcpy(&value, stack.get() + (addr - STACK_START), sizeof(T));
+    std::memcpy(&value, stack.get() + stack_offset(addr), sizeof(T));
     return value;
   }
   if (in_heap(addr, sizeof(T))) {
     T value;
-    std::memcpy(&value, heap.get() + (addr - HEAP_START), sizeof(T));
+    std::memcpy(&value, heap.get() + heap_offset(addr), sizeof(T));
     return value;
   }
   return read_slow<T>(addr);
@@ -86,11 +93,11 @@ template <typename T> T Memory::read_impl(uint64_t addr) const {
 // Unified write implementation
 template <typename T> void Memory::write_impl(uint64_t addr, T value) {
   if (in_stack(addr, sizeof(T))) {
-    std::memcpy(stack.get() + (addr - STACK_START), &value, sizeof(T));
+    std::memcpy(stack.get() + stack_offset(addr), &value, sizeof(T));
     return;
   }
   if (in_heap(addr, sizeof(T))) {
-    std::memcpy(heap.get() + (addr - HEAP_START), &value, sizeof(T));
+    std::memcpy(heap.get() + heap_offset(addr), &value, sizeof(T));
     return;
   }
   write_slow<T>(addr, value);
@@ -197,13 +204,10 @@ void Memory::dump_segment(uint64_t start, uint64_t end) const {
       uint64_t current_addr = addr + static_cast<uint64_t>(i);
       uint8_t byte = 0;
 
-      // Get byte from appropriate region
-      if (current_addr >= STACK_START &&
-          current_addr < STACK_START + STACK_SIZE) {
-        byte = stack[current_addr - STACK_START];
-      } else if (current_addr >= HEAP_START &&
-                 current_addr < HEAP_START + HEAP_SIZE) {
-        byte = heap[current_addr - HEAP_START];
+      if (in_stack(current_addr)) {
+        byte = stack[stack_offset(current_addr)];
+      } else if (in_heap(current_addr)) {
+        byte = heap[heap_offset(current_addr)];
       } else {
         auto it = sparse.find(current_addr);
         if (it != sparse.end()) {
@@ -228,7 +232,6 @@ void Memory::dump_segment(uint64_t start, uint64_t end) const {
 
 void Memory::dump() const {
   if (sparse.empty()) {
-    // Check if stack or heap have any non-zero values
     bool has_data = false;
     for (size_t i = 0; i < STACK_SIZE && !has_data; i++) {
       if (stack[i] != 0)
@@ -238,16 +241,14 @@ void Memory::dump() const {
       if (heap[i] != 0)
         has_data = true;
     }
-
     if (!has_data) {
       std::cout << "Memory is empty\n";
       return;
     }
   }
 
-  // Dump a reasonable range
-  dump_segment(HEAP_START, HEAP_START + HEAP_SIZE);
-  dump_segment(STACK_START - 0x1000, STACK_START + 0x1000);
+  dump_segment(HEAP_START, HEAP_END);
+  dump_segment(STACK_BOTTOM, STACK_TOP);
 }
 
 } // namespace srrarch
