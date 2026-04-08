@@ -93,6 +93,8 @@ private:
   __attribute__((always_inline)) inline void
   exec_genint(const DecodedGenInt &dec);
   __attribute__((always_inline)) inline void exec_mov(const DecodedMov &dec);
+  __attribute__((always_inline)) inline void
+  exec_select(const DecodedSelect &dec);
 
   // Arithmetic register-register
   __attribute__((always_inline)) inline void exec_add(const DecodedR &dec);

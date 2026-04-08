@@ -143,6 +143,10 @@ void Simulator::execute(const Instruction &inst) {
     exec_mov(inst.as_mov());
     break;
 
+  case Opcode::SELECT:
+    exec_select(inst.as_select());
+    break;
+
   // Arithmetic register-register
   case Opcode::ADD:
     exec_add(inst.as_r());
@@ -477,6 +481,19 @@ void Simulator::exec_mov(const DecodedMov &dec) {
   const uint64_t val = regs.read(dec.src);
   LOG_INFO("  -> MOV: R%u = R%u (0x%lx)", dec.dest, dec.src, val);
   regs.write(dec.dest, val);
+}
+
+void Simulator::exec_select(const DecodedSelect &dec) {
+  const uint64_t cond = regs.read(dec.srcc);
+  const uint64_t true_val = regs.read(dec.srct);
+  const uint64_t false_val = regs.read(dec.srcf);
+  const uint64_t result = (cond != 0) ? true_val : false_val;
+  LOG_INFO("  -> SELECT: R%u = (R%u != 0) ? R%u : R%u (0x%lx ? 0x%lx : 0x%lx = "
+           "0x%lx)",
+           dec.dest, dec.srcc, dec.srct, dec.srcf, cond, true_val, false_val,
+           result);
+
+  regs.write(dec.dest, result);
 }
 
 // Arithmetic register-register

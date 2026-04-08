@@ -71,9 +71,10 @@ enum class Opcode : uint8_t {
   BRCOND = 0x28,
   BR = 0x29,
 
-  // Immediate and move (0x2a-0x2b)
+  // Misc (0x2a-0x2c)
   GENINT = 0x2a,
   MOV = 0x2b,
+  SELECT = 0x2c,
 
   COUNT
 };
@@ -91,8 +92,8 @@ constexpr const char *OPCODE_NAMES[] = {
     "LOADBZ", "LOADBS", "LOADHZ", "LOADHS", "LOADWZ", "LOADWS", "LOAD",
     // Control flow
     "RETURN", "CALL", "CALLREG", "BRCOND", "BR",
-    // Immediate and move
-    "GENINT", "MOV"};
+    // Misc
+    "GENINT", "MOV", "SELECT"};
 
 // Compile-time assertion that COUNT matches array size
 static_assert(static_cast<size_t>(Opcode::COUNT) ==
@@ -150,6 +151,13 @@ struct DecodedMov {
   uint8_t src;
 };
 
+struct DecodedSelect {
+  uint8_t dest;
+  uint8_t srcc;
+  uint8_t srct;
+  uint8_t srcf;
+};
+
 class Instruction {
 public:
   // Construct from raw 64-bit little-endian value
@@ -172,6 +180,7 @@ public:
   const DecodedCallReg &as_callreg() const { return data.callreg; }
   const DecodedGenInt &as_genint() const { return data.genint; }
   const DecodedMov &as_mov() const { return data.mov; }
+  const DecodedSelect &as_select() const { return data.select; }
 
   // Utility
   size_t register_count() const;
@@ -193,6 +202,7 @@ private:
     DecodedCallReg callreg;
     DecodedGenInt genint;
     DecodedMov mov;
+    DecodedSelect select;
 
     DecodedData() {}
     ~DecodedData() {}

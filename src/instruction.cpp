@@ -130,6 +130,14 @@ void Instruction::decode(uint64_t raw) {
     data.mov.src = (raw >> 13) & 0x1F;
     break;
 
+  // SELECT
+  case Opcode::SELECT:
+    data.select.dest = (raw >> 8) & 0x1F;
+    data.select.srcc = (raw >> 13) & 0x1F;
+    data.select.srct = (raw >> 18) & 0x1F;
+    data.select.srcf = (raw >> 23) & 0x1F;
+    break;
+
   case Opcode::NOP:
   case Opcode::RETURN:
   default:
@@ -248,6 +256,13 @@ std::string Instruction::to_string() const {
   case Opcode::BRCOND:
     ss << " R" << static_cast<int>(data.cond_branch.cond_reg) << ", 0x"
        << std::hex << data.cond_branch.target << std::dec;
+    break;
+
+  case Opcode::SELECT:
+    ss << " R" << static_cast<int>(data.select.dest) << ", R"
+       << static_cast<int>(data.select.srcc) << ", R"
+       << static_cast<int>(data.select.srct) << ", R"
+       << static_cast<int>(data.select.srcf);
     break;
 
   default:
