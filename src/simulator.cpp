@@ -363,6 +363,9 @@ void Simulator::cache_basic_block(uint64_t start_pc) {
 }
 
 void Simulator::execute_basic_block(const BasicBlock &block) {
+  // we need to advance the pc before executing in case the block was cached
+  // since fetch was not called.
+  regs.set_pc(block.end_pc + 8);
   for (size_t i = 0; i < block.instructions.size(); ++i) {
     execute(block.instructions[i]);
     if (!running)
