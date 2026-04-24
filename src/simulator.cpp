@@ -1031,25 +1031,29 @@ void Simulator::exec_printf() {
       case 'x':
       case 'X': {
         // Hexadecimal conversion with length modifiers
-        const char *fmt = (spec == 'x') ? "%lx" : "%lX";
-        const uint64_t val = current_arg;
-
         switch (length_modifier) {
+        case 3: { // l - unsigned long
+          unsigned long val = current_arg;
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%lx" : "%lX", val);
+          break;
+        }
         case 2: { // hh - unsigned char
-          unsigned char cval = static_cast<unsigned char>(current_arg & 0xFF);
+          unsigned char val = static_cast<unsigned char>(current_arg & 0xFF);
           snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%02x" : "%02X",
-                   cval);
+                   val);
           break;
         }
         case 1: { // h - unsigned short
-          unsigned short sval =
+          unsigned short val =
               static_cast<unsigned short>(current_arg & 0xFFFF);
           snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%04x" : "%04X",
-                   sval);
+                   val);
           break;
         }
-        default: { // default - unsigned long
-          snprintf(buffer, sizeof(buffer), fmt, val);
+        default: { // default - unsigned int
+          unsigned int val =
+              static_cast<unsigned int>(current_arg & 0xFFFFFFFF);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%x" : "%X", val);
           break;
         }
         }
