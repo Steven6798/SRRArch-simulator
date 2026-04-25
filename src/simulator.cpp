@@ -984,19 +984,22 @@ void Simulator::exec_printf() {
       case 'i': {
         // Signed integer conversion with length modifiers
         switch (length_modifier) {
+        case 3: { // l - long
+          snprintf(buffer, sizeof(buffer), "%ld", current_arg);
+          break;
+        }
         case 2: { // hh - char
-          signed char val = static_cast<signed char>(current_arg & 0xFF);
-          snprintf(buffer, sizeof(buffer), "%d", static_cast<int>(val));
+          snprintf(buffer, sizeof(buffer), "%hhd",
+                   static_cast<int>(current_arg));
           break;
         }
         case 1: { // h - short
-          short val = static_cast<short>(current_arg & 0xFFFF);
-          snprintf(buffer, sizeof(buffer), "%d", static_cast<int>(val));
+          snprintf(buffer, sizeof(buffer), "%hd",
+                   static_cast<int>(current_arg));
           break;
         }
-        default: { // default - int/long
-          snprintf(buffer, sizeof(buffer), "%ld",
-                   static_cast<long>(current_arg));
+        default: { // default - int
+          snprintf(buffer, sizeof(buffer), "%d", static_cast<int>(current_arg));
           break;
         }
         }
@@ -1006,22 +1009,23 @@ void Simulator::exec_printf() {
       case 'u': {
         // Unsigned integer conversion with length modifiers
         switch (length_modifier) {
+        case 3: { // l - unsigned long
+          snprintf(buffer, sizeof(buffer), "%lu", current_arg);
+          break;
+        }
         case 2: { // hh - unsigned char
-          unsigned char val = static_cast<unsigned char>(current_arg & 0xFF);
-          snprintf(buffer, sizeof(buffer), "%u",
-                   static_cast<unsigned int>(val));
+          snprintf(buffer, sizeof(buffer), "%hhu",
+                   static_cast<int>(current_arg));
           break;
         }
         case 1: { // h - unsigned short
-          unsigned short val =
-              static_cast<unsigned short>(current_arg & 0xFFFF);
-          snprintf(buffer, sizeof(buffer), "%u",
-                   static_cast<unsigned int>(val));
+          snprintf(buffer, sizeof(buffer), "%hu",
+                   static_cast<int>(current_arg));
           break;
         }
-        default: { // default - unsigned long
-          snprintf(buffer, sizeof(buffer), "%lu",
-                   static_cast<unsigned long>(current_arg));
+        default: { // default - unsigned int
+          snprintf(buffer, sizeof(buffer), "%u",
+                   static_cast<unsigned int>(current_arg));
           break;
         }
         }
@@ -1033,27 +1037,23 @@ void Simulator::exec_printf() {
         // Hexadecimal conversion with length modifiers
         switch (length_modifier) {
         case 3: { // l - unsigned long
-          unsigned long val = current_arg;
-          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%lx" : "%lX", val);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%lx" : "%lX",
+                   current_arg);
           break;
         }
         case 2: { // hh - unsigned char
-          unsigned char val = static_cast<unsigned char>(current_arg & 0xFF);
-          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%02x" : "%02X",
-                   val);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%02hhx" : "%02hhX",
+                   static_cast<int>(current_arg));
           break;
         }
         case 1: { // h - unsigned short
-          unsigned short val =
-              static_cast<unsigned short>(current_arg & 0xFFFF);
-          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%04x" : "%04X",
-                   val);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%04hx" : "%04hX",
+                   static_cast<int>(current_arg));
           break;
         }
         default: { // default - unsigned int
-          unsigned int val =
-              static_cast<unsigned int>(current_arg & 0xFFFFFFFF);
-          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%x" : "%X", val);
+          snprintf(buffer, sizeof(buffer), (spec == 'x') ? "%x" : "%X",
+                   static_cast<unsigned int>(current_arg));
           break;
         }
         }
